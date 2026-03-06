@@ -114,9 +114,38 @@ pub fn run() {
                             if window.is_visible().unwrap_or(false) {
                                 let _ = window.hide();
                             } else {
-                                // Get scale factor for coordinate conversion
-                                let scale = window.scale_factor().unwrap_or(2.0);
                                 let panel_width = 340.0_f64;
+
+                                // Find the correct scale factor from the monitor
+                                // containing the tray icon (not the window's monitor)
+                                let fallback_scale = window.scale_factor().unwrap_or(2.0);
+                                let scale = {
+                                    // Get physical position of the tray icon
+                                    let (phys_x, phys_y) = match rect.position {
+                                        tauri::Position::Physical(p) => (p.x as f64, p.y as f64),
+                                        tauri::Position::Logical(l) => (
+                                            l.x * fallback_scale,
+                                            l.y * fallback_scale,
+                                        ),
+                                    };
+                                    // Find which monitor contains this position
+                                    let mut found_scale = fallback_scale;
+                                    if let Ok(monitors) = app.available_monitors() {
+                                        for monitor in &monitors {
+                                            let mp = monitor.position();
+                                            let ms = monitor.size();
+                                            if phys_x >= mp.x as f64
+                                                && phys_x < (mp.x as f64 + ms.width as f64)
+                                                && phys_y >= mp.y as f64
+                                                && phys_y < (mp.y as f64 + ms.height as f64)
+                                            {
+                                                found_scale = monitor.scale_factor();
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    found_scale
+                                };
 
                                 // Convert tray icon rect to logical coordinates
                                 let (tray_x, tray_y) = match rect.position {
@@ -157,13 +186,21 @@ pub fn run() {
             let last_toggle_focus = last_toggle.clone();
             window.on_window_event(move |event| {
                 if let tauri::WindowEvent::Focused(false) = event {
-                    // Don't hide if we just toggled via tray (within 500ms)
-                    if let Ok(ts) = last_toggle_focus.lock() {
-                        if ts.elapsed() < std::time::Duration::from_millis(500) {
-                            return;
+                    // Delay the hide so the tray-click handler has time to
+                    // set the debounce timestamp first (macOS fires
+                    // Focused(false) BEFORE the tray click event).
+                    let ts_clone = last_toggle_focus.clone();
+                    let w = window_clone.clone();
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_millis(200));
+                        // Don't hide if we just toggled via tray (within 500ms)
+                        if let Ok(ts) = ts_clone.lock() {
+                            if ts.elapsed() < std::time::Duration::from_millis(500) {
+                                return;
+                            }
                         }
-                    }
-                    let _ = window_clone.hide();
+                        let _ = w.hide();
+                    });
                 }
             });
 

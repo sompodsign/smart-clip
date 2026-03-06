@@ -4,6 +4,12 @@
 
 set -e
 
+# Abort if SmartClip is currently running
+if pgrep -x "SmartClip" > /dev/null 2>&1; then
+    echo "❌ SmartClip is currently running. Please quit it before building/reinstalling."
+    exit 1
+fi
+
 # Ensure Rust is available
 source "$HOME/.cargo/env" 2>/dev/null || true
 
