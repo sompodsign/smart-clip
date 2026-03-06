@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartClip — Clipboard Manager for Mac</title>
+  <meta name="description" content="SmartClip keeps your clipboard history organized and instantly accessible. Text, images, pinning, search — all in a lightweight macOS app." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0b0b0e;
+      --surface:   #131318;
+      --surface2:  #1c1c24;
+      --border:    rgba(255,255,255,0.07);
+      --border2:   rgba(255,255,255,0.12);
+      --accent:    #7b6cf6;
+      --accent2:   #a78bfa;
+      --accent-glow: rgba(123,108,246,0.35);
+      --text:      #f0f0f8;
+      --muted:     #8080a0;
+      --muted2:    #5a5a78;
+      --green:     #34d399;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Noise texture overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    /* ── UTILITIES ── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(123,108,246,0.12);
+      border: 1px solid rgba(123,108,246,0.3);
+      color: var(--accent2);
+      font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 5px 12px; border-radius: 100px;
+    }
+    .badge::before { content: ''; width: 6px; height: 6px; background: var(--accent2); border-radius: 50%; }
+
+    /* ── NAVBAR ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      padding: 16px 0;
+      background: rgba(11,11,14,0.8);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--border);
+    }
+    nav .container { display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 17px; font-weight: 700; color: var(--text); text-decoration: none;
+    }
+    .nav-logo-icon {
+      width: 30px; height: 30px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      box-shadow: 0 0 18px var(--accent-glow);
+    }
+    .nav-links { display: flex; align-items: center; gap: 8px; }
+    .nav-link {
+      color: var(--muted); font-size: 14px; font-weight: 500; text-decoration: none;
+      padding: 7px 14px; border-radius: 8px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .nav-link:hover { color: var(--text); background: var(--surface2); }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 20px; border-radius: 10px; font-size: 14px; font-weight: 600;
+      cursor: pointer; text-decoration: none; border: none; transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #9d7cf8);
+      color: #fff;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 28px var(--accent-glow); }
+    .btn-ghost {
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border2);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.07); }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 100px 0 80px;
+      text-align: center;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%; transform: translateX(-50%);
+      width: 700px; height: 500px;
+      background: radial-gradient(ellipse at center, rgba(123,108,246,0.14) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-badge { margin-bottom: 28px; }
+    .hero h1 {
+      font-size: clamp(44px, 7vw, 80px);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      margin-bottom: 22px;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, #fff 30%, var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero p {
+      font-size: 19px; color: var(--muted); max-width: 540px; margin: 0 auto 40px;
+      line-height: 1.65;
+    }
+    .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .hero-note { margin-top: 18px; font-size: 13px; color: var(--muted2); }
+
+    /* ── APP MOCKUP ── */
+    .mockup-wrap {
+      margin: 72px auto 0;
+      max-width: 380px;
+      position: relative;
+    }
+    .mockup-wrap::before {
+      content: '';
+      position: absolute;
+      top: 20%; left: 50%; transform: translate(-50%,-50%);
+      width: 280px; height: 280px;
+      background: radial-gradient(ellipse, rgba(123,108,246,0.22), transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+    .mockup {
+      position: relative; z-index: 1;
+      background: #18181f;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04),
+        0 40px 80px rgba(0,0,0,0.6),
+        0 0 60px rgba(123,108,246,0.12);
+    }
+    .mockup-titlebar {
+      display: flex; align-items: center; gap: 7px;
+      padding: 11px 14px 10px;
+      background: #1e1e28;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .dot-red { background: #ff5f57; }
+    .dot-yellow { background: #febc2e; }
+    .dot-green { background: #28c840; }
+    .mockup-title {
+      flex: 1; text-align: center;
+      font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.02em;
+    }
+    .mockup-search {
+      margin: 12px 12px 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex; align-items: center; gap: 8px;
+      color: var(--muted2); font-size: 13px;
+    }
+    .search-icon { font-size: 12px; }
+    .mockup-filters {
+      display: flex; gap: 6px; padding: 0 12px 8px;
+    }
+    .filter-chip {
+      padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
+    }
+    .filter-chip.active { background: var(--accent); color: #fff; }
+    .filter-chip:not(.active) { background: rgba(255,255,255,0.05); color: var(--muted); }
+    .mockup-items { padding: 0 8px 8px; }
+    .mock-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 10px; border-radius: 8px; margin-bottom: 4px;
+      transition: background 0.15s;
+    }
+    .mock-item:first-child { background: rgba(123,108,246,0.18); border: 1px solid rgba(123,108,246,0.25); }
+    .mock-item:not(:first-child) { background: rgba(255,255,255,0.03); }
+    .mock-item-icon { font-size: 13px; margin-right: 8px; opacity: 0.7; }
+    .mock-item-text { flex: 1; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mock-item-pin { font-size: 10px; color: var(--accent); opacity: 0; }
+    .mock-item:first-child .mock-item-pin { opacity: 1; }
+    .mock-item-badge {
+      font-size: 10px; font-weight: 600; color: var(--green);
+      background: rgba(52,211,153,0.12);
+      padding: 2px 7px; border-radius: 4px;
+    }
+    .mockup-footer {
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 10px 12px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .mockup-footer-status { font-size: 11px; color: var(--muted2); }
+    .mockup-upgrade {
+      font-size: 11px; font-weight: 600;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    /* ── LOGOS / TRUST ── */
+    .trust {
+      padding: 24px 0 80px;
+      text-align: center;
+    }
+    .trust p { font-size: 12px; color: var(--muted2); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; margin-bottom: 20px; }
+    .trust-icons { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; }
+    .trust-icon {
+      display: flex; align-items: center; gap: 7px;
+      color: var(--muted2); font-size: 13px; font-weight: 500;
+    }
+    .trust-icon span { font-size: 18px; }
+
+    /* ── FEATURES ── */
+    .features { padding: 80px 0; }
+    .section-header { text-align: center; margin-bottom: 56px; }
+    .section-header h2 {
+      font-size: clamp(32px, 4vw, 48px); font-weight: 800;
+      letter-spacing: -0.025em; line-height: 1.1; margin: 12px 0 14px;
+    }
+    .section-header p { font-size: 17px; color: var(--muted); max-width: 480px; margin: 0 auto; }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+    .feature-card:hover {
+      border-color: rgba(123,108,246,0.3);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    }
+    .feature-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: rgba(123,108,246,0.12);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; margin-bottom: 18px;
+      border: 1px solid rgba(123,108,246,0.2);
+    }
+    .feature-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+    /* ── HOW IT WORKS ── */
+    .how { padding: 80px 0; }
+    .steps {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px; margin-top: 0;
+    }
+    .step { text-align: center; padding: 36px 28px; }
+    .step-num {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-size: 20px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+      box-shadow: 0 0 24px var(--accent-glow);
+    }
+    .step h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+    .step p { font-size: 14px; color: var(--muted); line-height: 1.65; }
+
+    /* ── PRICING ── */
+    .pricing { padding: 80px 0 100px; }
+    .pricing-toggle {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      margin: 0 auto 48px;
+    }
+    .toggle-label { font-size: 14px; color: var(--muted); font-weight: 500; }
+    .toggle-label.active { color: var(--text); }
+    .toggle {
+      width: 44px; height: 24px; background: var(--surface2); border-radius: 100px;
+      border: 1px solid var(--border2); cursor: pointer;
+      position: relative; transition: background 0.2s;
+    }
+    .toggle.on { background: var(--accent); }
+    .toggle::after {
+      content: ''; position: absolute; top: 3px; left: 3px;
+      width: 16px; height: 16px; border-radius: 50%; background: #fff;
+      transition: transform 0.2s;
+    }
+    .toggle.on::after { transform: translateX(20px); }
+    .save-badge {
+      font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 100px;
+      background: rgba(52,211,153,0.15); color: var(--green);
+      border: 1px solid rgba(52,211,153,0.25);
+    }
+    .pricing-cards {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px; max-width: 700px; margin: 0 auto;
+    }
+    .pricing-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px; padding: 32px;
+      position: relative;
+    }
+    .pricing-card.featured {
+      border-color: rgba(123,108,246,0.5);
+      background: linear-gradient(160deg, rgba(123,108,246,0.08), var(--surface));
+      box-shadow: 0 0 0 1px rgba(123,108,246,0.15), 0 20px 60px rgba(123,108,246,0.12);
+    }
+    .popular-tag {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-size: 11px; font-weight: 700;
+      padding: 4px 14px; border-radius: 100px; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .plan-name { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 16px; }
+    .plan-price {
+      font-size: 48px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 4px;
+      display: flex; align-items: baseline; gap: 4px;
+    }
+    .plan-price sup { font-size: 22px; font-weight: 700; color: var(--muted); }
+    .plan-price .cents { font-size: 18px; color: var(--muted); }
+    .plan-cycle { font-size: 13px; color: var(--muted2); margin-bottom: 28px; }
+    .plan-features { list-style: none; margin-bottom: 32px; }
+    .plan-features li {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; color: var(--muted); padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .plan-features li:last-child { border-bottom: none; }
+    .plan-features li::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
+    .plan-features li.off { color: var(--muted2); }
+    .plan-features li.off::before { content: '–'; color: var(--muted2); }
+    .btn-plan {
+      width: 100%; text-align: center; padding: 13px;
+      border-radius: 11px; font-size: 15px; font-weight: 700;
+      cursor: pointer; text-decoration: none; border: none;
+      transition: all 0.2s; display: block;
+    }
+    .btn-plan-primary {
+      background: linear-gradient(135deg, var(--accent), #9d7cf8);
+      color: #fff; box-shadow: 0 4px 20px var(--accent-glow);
+    }
+    .btn-plan-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 28px var(--accent-glow); }
+    .btn-plan-ghost {
+      background: var(--surface2); color: var(--muted);
+      border: 1px solid var(--border2);
+    }
+    .btn-plan-ghost:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+
+    /* ── FAQ ── */
+    .faq { padding: 60px 0 80px; }
+    .faq-grid { max-width: 680px; margin: 0 auto; }
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+      padding: 22px 0;
+    }
+    .faq-item:first-child { border-top: 1px solid var(--border); }
+    .faq-q {
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      list-style: none;
+    }
+    .faq-q::-webkit-details-marker { display: none; }
+    .faq-arrow { transition: transform 0.2s; color: var(--muted); flex-shrink: 0; }
+    details[open] .faq-arrow { transform: rotate(180deg); }
+    .faq-a { font-size: 14px; color: var(--muted); line-height: 1.7; padding-top: 12px; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 0;
+    }
+    footer .container {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    }
+    .footer-logo { display: flex; align-items: center; gap: 9px; text-decoration: none; }
+    .footer-logo-icon {
+      width: 26px; height: 26px; border-radius: 7px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center; font-size: 13px;
+    }
+    .footer-logo-text { font-size: 15px; font-weight: 700; color: var(--text); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-link { font-size: 13px; color: var(--muted2); text-decoration: none; transition: color 0.2s; }
+    .footer-link:hover { color: var(--text); }
+    .footer-copy { font-size: 12px; color: var(--muted2); }
+
+    /* ── CTA SECTION ── */
+    .cta-section {
+      padding: 80px 0;
+      text-align: center;
+      position: relative;
+    }
+    .cta-section::before {
+      content: '';
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      width: 500px; height: 300px;
+      background: radial-gradient(ellipse, rgba(123,108,246,0.12), transparent 70%);
+      pointer-events: none;
+    }
+    .cta-section h2 { font-size: clamp(28px, 4vw, 44px); font-weight: 800; letter-spacing: -0.025em; margin-bottom: 14px; }
+    .cta-section p { font-size: 17px; color: var(--muted); margin-bottom: 36px; }
+    .cta-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── DIVIDER ── */
+    .divider {
+      height: 1px; background: var(--border); max-width: 1100px; margin: 0 auto;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .anim { animation: fadeUp 0.6s ease both; }
+    .anim-1 { animation-delay: 0.05s; }
+    .anim-2 { animation-delay: 0.15s; }
+    .anim-3 { animation-delay: 0.25s; }
+    .anim-4 { animation-delay: 0.35s; }
+    .anim-5 { animation-delay: 0.45s; }
+
+    @media (max-width: 640px) {
+      .nav-links .nav-link { display: none; }
+      .hero { padding: 72px 0 56px; }
+      .step { padding: 28px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="container">
+      <a href="#" class="nav-logo">
+        <div class="nav-logo-icon">&#128203;</div>
+        SmartClip
+      </a>
+      <div class="nav-links">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#pricing" class="nav-link">Pricing</a>
+        <a href="#faq" class="nav-link">FAQ</a>
+        <a href="#pricing" class="btn btn-primary" style="margin-left:8px;">Get SmartClip &rarr;</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge anim anim-1">
+        <span class="badge">Native macOS App</span>
+      </div>
+      <h1 class="anim anim-2">
+        Your clipboard,<br /><span>finally organized.</span>
+      </h1>
+      <p class="anim anim-3">
+        SmartClip quietly tracks everything you copy &mdash; text, images, code &mdash;
+        and makes it instantly searchable. Stop losing what you copied.
+      </p>
+      <div class="hero-actions anim anim-4">
+        <a href="#pricing" class="btn btn-primary" style="font-size:15px; padding:12px 28px;">
+          &#8595;&nbsp; Download Free
+        </a>
+        <a href="#features" class="btn btn-ghost" style="font-size:15px; padding:12px 28px;">
+          See features
+        </a>
+      </div>
+      <p class="hero-note anim anim-5">Free forever &bull; No account needed &bull; macOS 12+</p>
+
+      <!-- APP MOCKUP -->
+      <div class="mockup-wrap anim anim-5">
+        <div class="mockup">
+          <div class="mockup-titlebar">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+            <div class="mockup-title">SmartClip &nbsp;&mdash;&nbsp; 8 items</div>
+          </div>
+          <div class="mockup-search">
+            <span class="search-icon">&#128269;</span>
+            Search clipboard history&hellip;
+          </div>
+          <div class="mockup-filters">
+            <span class="filter-chip active">All</span>
+            <span class="filter-chip">Text</span>
+            <span class="filter-chip">Images</span>
+          </div>
+          <div class="mockup-items">
+            <div class="mock-item">
+              <span class="mock-item-icon">&#128203;</span>
+              <span class="mock-item-text">const apiKey = process.env.OPENAI_KEY</span>
+              <span class="mock-item-pin">&#10022;</span>
+              <span class="mock-item-badge">&#10003; Copied</span>
+            </div>
+            <div class="mock-item">
+              <span class="mock-item-icon">&#128247;</span>
+              <span class="mock-item-text">screenshot-2024-03.png</span>
+              <span class="mock-item-pin"></span>
+            </div>
+            <div class="mock-item">
+              <span class="mock-item-icon">&#128203;</span>
+              <span class="mock-item-text">https://github.com/shampad/smartclip</span>
+              <span class="mock-item-pin"></span>
+            </div>
+            <div class="mock-item">
+              <span class="mock-item-icon">&#128203;</span>
+              <span class="mock-item-text">Meeting at 3pm — don&apos;t forget to send the&hellip;</span>
+              <span class="mock-item-pin"></span>
+            </div>
+            <div class="mock-item">
+              <span class="mock-item-icon">&#128203;</span>
+              <span class="mock-item-text">npm install @tauri-apps/cli --save-dev</span>
+              <span class="mock-item-pin"></span>
+            </div>
+          </div>
+          <div class="mockup-footer">
+            <span class="mockup-footer-status">&#9675; Free &mdash; 5 item limit</span>
+            <span class="mockup-upgrade">Upgrade to Pro &rarr;</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRUST -->
+  <div class="trust">
+    <div class="container">
+      <p>Built with</p>
+      <div class="trust-icons">
+        <span class="trust-icon"><span>&#129302;</span> Tauri + Rust</span>
+        <span class="trust-icon"><span>&#127381;</span> React</span>
+        <span class="trust-icon"><span>&#128274;</span> Local-first &amp; private</span>
+        <span class="trust-icon"><span>&#9889;</span> Lightweight &lt; 5 MB</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- FEATURES -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-header">
+        <span class="badge">Features</span>
+        <h2>Everything your clipboard<br />was missing.</h2>
+        <p>A fast, focused clipboard manager that stays out of your way until you need it.</p>
+      </div>
+      <div class="features-grid">
+
+        <div class="feature-card">
+          <div class="feature-icon">&#128269;</div>
+          <h3>Instant Search</h3>
+          <p>Type to filter across your entire clipboard history in real time. Find any snippet in milliseconds, not minutes.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">&#128247;</div>
+          <h3>Text &amp; Images</h3>
+          <p>SmartClip captures both text and images. Screenshot a diagram, copy code, paste a URL &mdash; all in one place.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">&#10022;</div>
+          <h3>Pin What Matters</h3>
+          <p>Pin frequently used snippets so they never scroll away. Your API keys, templates, and addresses always at the top.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">&#128204;</div>
+          <h3>App Source Tracking</h3>
+          <p>Know exactly which app you copied something from. SmartClip records the source so you always have context.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">&#9889;</div>
+          <h3>One-Click Restore</h3>
+          <p>Click any item to instantly restore it to your clipboard. Paste it anywhere, immediately. Zero friction.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">&#128274;</div>
+          <h3>Fully Local &amp; Private</h3>
+          <p>Your clipboard data never leaves your Mac. No cloud sync, no servers, no tracking. Just a fast local database.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- HOW IT WORKS -->
+  <section class="how" id="how">
+    <div class="container">
+      <div class="section-header">
+        <span class="badge">How it works</span>
+        <h2>Simple by design.</h2>
+        <p>No configuration required. Install and it just works.</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3>Install SmartClip</h3>
+          <p>Download the app, drag it to your Applications folder. It runs as a lightweight background process.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3>Copy anything</h3>
+          <p>Use your Mac normally. SmartClip silently captures every text and image you copy in the background.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3>Access &amp; paste</h3>
+          <p>Open SmartClip, search or scroll your history, click an item to restore it to your clipboard, and paste.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- PRICING -->
+  <section class="pricing" id="pricing">
+    <div class="container">
+      <div class="section-header">
+        <span class="badge">Pricing</span>
+        <h2>Start free.<br />Upgrade when you&rsquo;re ready.</h2>
+        <p>No trial period. The free tier is genuinely useful. Pro unlocks unlimited history.</p>
+      </div>
+
+      <div class="pricing-toggle">
+        <span class="toggle-label active" id="toggle-monthly-label">Monthly</span>
+        <div class="toggle" id="billing-toggle" onclick="toggleBilling()"></div>
+        <span class="toggle-label" id="toggle-yearly-label">Yearly</span>
+        <span class="save-badge" id="save-badge" style="opacity:0">Save 19%</span>
+      </div>
+
+      <div class="pricing-cards">
+
+        <!-- FREE -->
+        <div class="pricing-card">
+          <div class="plan-name">Free</div>
+          <div class="plan-price"><sup></sup>$0</div>
+          <div class="plan-cycle">Forever free</div>
+          <ul class="plan-features">
+            <li>Up to 5 clipboard items</li>
+            <li>Text &amp; image capture</li>
+            <li>Search &amp; filter</li>
+            <li class="off">Unlimited history</li>
+            <li class="off">Pin items</li>
+            <li class="off">Priority support</li>
+          </ul>
+          <a href="#" class="btn-plan btn-plan-ghost">Download Free</a>
+        </div>
+
+        <!-- PRO -->
+        <div class="pricing-card featured">
+          <div class="popular-tag">Most Popular</div>
+          <div class="plan-name">Pro</div>
+          <div class="plan-price" id="price-display">
+            <sup>$</sup><span id="price-num">2</span><span class="cents" id="price-cents">.00</span>
+          </div>
+          <div class="plan-cycle" id="plan-cycle-label">per month</div>
+          <ul class="plan-features">
+            <li>Unlimited clipboard history</li>
+            <li>Text &amp; image capture</li>
+            <li>Search &amp; filter</li>
+            <li>Pin important items</li>
+            <li>App source tracking</li>
+            <li>Priority support</li>
+          </ul>
+          <a
+            id="checkout-btn"
+            href="https://shampad.lemonsqueezy.com/checkout/buy/e72f7bca-cf8d-43d4-a8e9-e0889e44227b?enabled=1374144"
+            class="btn-plan btn-plan-primary"
+            target="_blank" rel="noopener"
+          >
+            Get Pro &rarr;
+          </a>
+        </div>
+
+      </div>
+
+      <p style="text-align:center; margin-top:24px; font-size:13px; color:var(--muted2);">
+        Secure checkout via Lemon Squeezy &bull; Cancel anytime &bull; Instant license key delivery
+      </p>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- FAQ -->
+  <section class="faq" id="faq">
+    <div class="container">
+      <div class="section-header">
+        <span class="badge">FAQ</span>
+        <h2>Common questions.</h2>
+      </div>
+      <div class="faq-grid">
+
+        <details class="faq-item">
+          <summary class="faq-q">
+            Is my clipboard data stored in the cloud?
+            <span class="faq-arrow">&#8964;</span>
+          </summary>
+          <p class="faq-a">No. SmartClip stores everything locally in a SQLite database on your Mac. Your clipboard data never leaves your device. There are no accounts, no servers, and no telemetry.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-q">
+            What macOS versions are supported?
+            <span class="faq-arrow">&#8964;</span>
+          </summary>
+          <p class="faq-a">SmartClip requires macOS 12 Monterey or later. It is a native Mac app built with Tauri and Rust, so it runs efficiently on both Intel and Apple Silicon Macs.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-q">
+            How do I activate my Pro license?
+            <span class="faq-arrow">&#8964;</span>
+          </summary>
+          <p class="faq-a">After purchase, you receive a license key by email. Open SmartClip, click "Activate Key" in the footer, enter your key, and you're done. Pro features activate instantly.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-q">
+            Can I use it on multiple Macs?
+            <span class="faq-arrow">&#8964;</span>
+          </summary>
+          <p class="faq-a">Each Pro license allows activation on one Mac at a time. You can deactivate and reactivate on a different machine whenever you need.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-q">
+            What is your refund policy?
+            <span class="faq-arrow">&#8964;</span>
+          </summary>
+          <p class="faq-a">If SmartClip doesn't work for you, contact us within 14 days of purchase for a full refund &mdash; no questions asked. Monthly plans can be cancelled anytime.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-q">
+            Does SmartClip slow down my Mac?
+            <span class="faq-arrow">&#8964;</span>
+          </summary>
+          <p class="faq-a">SmartClip is built with Rust and is extremely lightweight &mdash; under 5 MB installed. It uses virtually no CPU when idle and minimal memory. You won't notice it's running.</p>
+        </details>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="container">
+      <h2>Stop losing what you copied.</h2>
+      <p>Join developers, writers, and power users who made their clipboard smarter.</p>
+      <div class="cta-actions">
+        <a href="#pricing" class="btn btn-primary" style="font-size:15px; padding:13px 30px;">
+          Get SmartClip Free &rarr;
+        </a>
+        <a href="#pricing" class="btn btn-ghost" style="font-size:15px; padding:13px 30px;">
+          View Pro pricing
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      <a href="#" class="footer-logo">
+        <div class="footer-logo-icon">&#128203;</div>
+        <span class="footer-logo-text">SmartClip</span>
+      </a>
+      <div class="footer-links">
+        <a href="mailto:hello@shampadsr.com" class="footer-link">Support</a>
+        <a href="https://shampad.lemonsqueezy.com/billing" class="footer-link" target="_blank" rel="noopener">Manage License</a>
+        <a href="#" class="footer-link">Privacy</a>
+      </div>
+      <span class="footer-copy">&copy; 2025 Shampad. All rights reserved.</span>
+    </div>
+  </footer>
+
+  <script>
+    let isYearly = false;
+
+    const MONTHLY_URL = 'https://shampad.lemonsqueezy.com/checkout/buy/e72f7bca-cf8d-43d4-a8e9-e0889e44227b?enabled=1374144';
+    const YEARLY_URL  = 'https://shampad.lemonsqueezy.com/checkout/buy/ab5739e3-7825-4bb5-857e-958411f66cc8?enabled=1374161';
+
+    function toggleBilling() {
+      isYearly = !isYearly;
+      const toggle   = document.getElementById('billing-toggle');
+      const priceNum = document.getElementById('price-num');
+      const priceCents = document.getElementById('price-cents');
+      const cycleLabel = document.getElementById('plan-cycle-label');
+      const checkoutBtn = document.getElementById('checkout-btn');
+      const saveBadge = document.getElementById('save-badge');
+      const monthlyLabel = document.getElementById('toggle-monthly-label');
+      const yearlyLabel  = document.getElementById('toggle-yearly-label');
+
+      if (isYearly) {
+        toggle.classList.add('on');
+        priceNum.textContent = '19';
+        priceCents.textContent = '.49';
+        cycleLabel.textContent = 'per year (≈ $1.62/mo)';
+        checkoutBtn.href = YEARLY_URL;
+        saveBadge.style.opacity = '1';
+        monthlyLabel.classList.remove('active');
+        yearlyLabel.classList.add('active');
+      } else {
+        toggle.classList.remove('on');
+        priceNum.textContent = '2';
+        priceCents.textContent = '.00';
+        cycleLabel.textContent = 'per month';
+        checkoutBtn.href = MONTHLY_URL;
+        saveBadge.style.opacity = '0';
+        monthlyLabel.classList.add('active');
+        yearlyLabel.classList.remove('active');
+      }
+    }
+  </script>
+
+</body>
+</html>
