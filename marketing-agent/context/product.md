@@ -3,6 +3,9 @@
 ## What It Is
 SmartClip is a macOS clipboard manager that silently captures everything you copy and makes your full clipboard history instantly searchable, pinnable, and re-pasteable.
 
+## Website
+https://smartclip.shampadsr.com
+
 ## How It Works
 1. SmartClip runs in the background as a lightweight process
 2. Every time you copy text or an image, SmartClip saves it automatically
