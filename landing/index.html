@@ -428,6 +428,48 @@
       height: 1px; background: var(--border); max-width: 1100px; margin: 0 auto;
     }
 
+    /* ── INSTALL SECTION ── */
+    .install-tabs {
+      display: flex; gap: 6px; justify-content: center; margin-bottom: 28px;
+    }
+    .install-tab {
+      padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--border2); background: transparent;
+      color: var(--muted); transition: all 0.2s; font-family: inherit;
+    }
+    .install-tab:hover { border-color: rgba(123,108,246,0.3); color: var(--text); }
+    .install-tab.active {
+      background: linear-gradient(135deg, var(--accent), #9d7cf8);
+      border-color: transparent; color: #fff;
+    }
+    .install-tab .rec {
+      font-size: 9px; background: rgba(52,211,153,0.2); color: var(--green);
+      padding: 2px 6px; border-radius: 100px; margin-left: 6px; font-weight: 700;
+      vertical-align: middle;
+    }
+    .install-panel { display: none; max-width: 600px; margin: 0 auto; }
+    .install-panel.active { display: block; }
+    .install-cmd {
+      background: rgba(0,0,0,0.4); border: 1px solid var(--border2); border-radius: 10px;
+      padding: 18px 20px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 14px;
+      color: var(--green); position: relative; cursor: pointer;
+      transition: border-color 0.2s; word-break: break-all;
+    }
+    .install-cmd:hover { border-color: rgba(123,108,246,0.4); }
+    .install-cmd .copy-hint {
+      position: absolute; top: 50%; right: 14px; transform: translateY(-50%);
+      font-size: 11px; color: var(--muted2); font-family: 'Inter', sans-serif;
+    }
+    .install-note {
+      font-size: 13px; color: var(--muted2); margin-top: 14px; line-height: 1.7;
+    }
+    .install-note code {
+      background: rgba(255,255,255,0.06); padding: 2px 7px; border-radius: 5px;
+      font-size: 12px; color: var(--muted);
+    }
+    .install-note a { color: var(--accent2); text-decoration: none; }
+    .install-note a:hover { text-decoration: underline; }
+
     /* ── ANIMATIONS ── */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(24px); }
@@ -479,8 +521,8 @@
         and makes it instantly searchable. Stop losing what you copied.
       </p>
       <div class="hero-actions anim anim-4">
-        <a href="https://storage.googleapis.com/capaccino/SmartClip_latest_aarch64.dmg" class="btn btn-primary download-dmg" style="font-size:15px; padding:12px 28px;" download>
-          &#8595;&nbsp; Download Free
+        <a href="#install" class="btn btn-primary" style="font-size:15px; padding:12px 28px;">
+          &#8595;&nbsp; Install Free
         </a>
         <a href="#features" class="btn btn-ghost" style="font-size:15px; padding:12px 28px;">
           See features
@@ -610,31 +652,62 @@
 
   <div class="divider"></div>
 
-  <!-- HOW IT WORKS -->
-  <section class="how" id="how">
+  <!-- INSTALL -->
+  <section class="how" id="install">
     <div class="container">
       <div class="section-header">
-        <span class="badge">How it works</span>
-        <h2>Simple by design.</h2>
-        <p>No configuration required. Install and it just works.</p>
+        <span class="badge">Install</span>
+        <h2>Get SmartClip in seconds.</h2>
+        <p>Choose your preferred install method. We recommend Homebrew for the smoothest experience.</p>
       </div>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num">1</div>
-          <h3>Install SmartClip</h3>
-          <p>Download the app, drag it to your Applications folder. It runs as a lightweight background process.</p>
-        </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <h3>Copy anything</h3>
-          <p>Use your Mac normally. SmartClip silently captures every text and image you copy in the background.</p>
-        </div>
-        <div class="step">
-          <div class="step-num">3</div>
-          <h3>Access &amp; paste</h3>
-          <p>Open SmartClip, search or scroll your history, click an item to restore it to your clipboard, and paste.</p>
-        </div>
+
+      <div class="install-tabs">
+        <button class="install-tab active" onclick="showInstall('brew')">Homebrew <span class="rec">Recommended</span></button>
+        <button class="install-tab" onclick="showInstall('dmg')">DMG Download</button>
+        <button class="install-tab" onclick="showInstall('curl')">curl</button>
       </div>
+
+      <!-- Homebrew -->
+      <div class="install-panel active" id="install-brew">
+        <div class="install-cmd" onclick="copyCmd(this)">
+          brew install sompodsign/tap/smartclip
+          <span class="copy-hint">Click to copy</span>
+        </div>
+        <p class="install-note">
+          Don&rsquo;t have Homebrew? Install it first:<br />
+          <code>/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</code>
+          <br />Learn more at <a href="https://brew.sh" target="_blank">brew.sh</a>
+        </p>
+      </div>
+
+      <!-- DMG -->
+      <div class="install-panel" id="install-dmg">
+        <div style="text-align:center;">
+          <a href="https://storage.googleapis.com/capaccino/SmartClip_latest_aarch64.dmg" class="btn btn-primary download-dmg" style="font-size:15px; padding:12px 28px;" download>
+            &#8595;&nbsp; Download DMG (Apple Silicon)
+          </a>
+          <a href="https://storage.googleapis.com/capaccino/SmartClip_latest_x64.dmg" class="btn btn-ghost" style="font-size:15px; padding:12px 28px; margin-left:8px;" download>
+            &#8595;&nbsp; Intel Mac
+          </a>
+        </div>
+        <p class="install-note" style="text-align:center;">
+          Open the DMG, drag SmartClip to Applications.<br />
+          First launch: if macOS shows a warning, open <strong>System Settings &rarr; Privacy &amp; Security</strong> and click <strong>&ldquo;Open Anyway&rdquo;</strong>.
+        </p>
+      </div>
+
+      <!-- curl -->
+      <div class="install-panel" id="install-curl">
+        <div class="install-cmd" onclick="copyCmd(this)">
+          curl -sL https://storage.googleapis.com/capaccino/SmartClip_latest_aarch64.dmg -o SmartClip.dmg &amp;&amp; open SmartClip.dmg
+          <span class="copy-hint">Click to copy</span>
+        </div>
+        <p class="install-note">
+          Downloads and opens the DMG automatically. Drag SmartClip to Applications, then run:<br />
+          <code>xattr -c /Applications/SmartClip.app</code>
+        </p>
+      </div>
+
     </div>
   </section>
 
@@ -841,6 +914,23 @@
         monthlyLabel.classList.add('active');
         yearlyLabel.classList.remove('active');
       }
+    }
+
+    // Install tab switching
+    function showInstall(id) {
+      document.querySelectorAll('.install-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.install-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('install-' + id).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    // Click to copy command
+    function copyCmd(el) {
+      const text = el.childNodes[0].textContent.trim();
+      navigator.clipboard.writeText(text);
+      const hint = el.querySelector('.copy-hint');
+      hint.textContent = 'Copied!';
+      setTimeout(() => hint.textContent = 'Click to copy', 1500);
     }
   </script>
 
