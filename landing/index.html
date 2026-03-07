@@ -451,15 +451,16 @@
     .install-panel.active { display: block; }
     .install-cmd {
       background: rgba(0,0,0,0.4); border: 1px solid var(--border2); border-radius: 10px;
-      padding: 18px 20px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 14px;
+      padding: 18px 48px 18px 20px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 14px;
       color: var(--green); position: relative; cursor: pointer;
       transition: border-color 0.2s; word-break: break-all;
     }
     .install-cmd:hover { border-color: rgba(123,108,246,0.4); }
-    .install-cmd .copy-hint {
+    .install-cmd .copy-btn {
       position: absolute; top: 50%; right: 14px; transform: translateY(-50%);
-      font-size: 11px; color: var(--muted2); font-family: 'Inter', sans-serif;
+      color: var(--muted2); transition: color 0.2s; display: flex;
     }
+    .install-cmd:hover .copy-btn { color: var(--muted); }
     .install-note {
       font-size: 13px; color: var(--muted2); margin-top: 14px; line-height: 1.7;
     }
@@ -671,7 +672,7 @@
       <div class="install-panel active" id="install-brew">
         <div class="install-cmd" onclick="copyCmd(this)">
           brew install sompodsign/tap/smartclip
-          <span class="copy-hint">Click to copy</span>
+          <span class="copy-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
         </div>
         <p class="install-note">
           Don&rsquo;t have Homebrew? Install it first:<br />
@@ -700,7 +701,7 @@
       <div class="install-panel" id="install-curl">
         <div class="install-cmd" onclick="copyCmd(this)">
           curl -sL https://storage.googleapis.com/capaccino/SmartClip_latest_aarch64.dmg -o SmartClip.dmg &amp;&amp; open SmartClip.dmg
-          <span class="copy-hint">Click to copy</span>
+          <span class="copy-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
         </div>
         <p class="install-note">
           Downloads and opens the DMG automatically. Drag SmartClip to Applications, then run:<br />
@@ -928,9 +929,11 @@
     function copyCmd(el) {
       const text = el.childNodes[0].textContent.trim();
       navigator.clipboard.writeText(text);
-      const hint = el.querySelector('.copy-hint');
-      hint.textContent = 'Copied!';
-      setTimeout(() => hint.textContent = 'Click to copy', 1500);
+      const btn = el.querySelector('.copy-btn');
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      setTimeout(() => {
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+      }, 1500);
     }
   </script>
 
