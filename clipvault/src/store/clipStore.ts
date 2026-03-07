@@ -27,11 +27,14 @@ interface ClipStore {
   selectedId: number | null;
   license: LicenseEntitlement | null;
   isLoading: boolean;
+  maxItems: number;
 
   setSearchQuery: (q: string) => void;
   setActiveFilter: (f: string) => void;
   setSelectedId: (id: number | null) => void;
   fetchHistory: () => Promise<void>;
+  fetchMaxItems: () => Promise<void>;
+  setMaxItems: (n: number) => Promise<void>;
   pinItem: (id: number) => Promise<void>;
   deleteItem: (id: number) => Promise<void>;
   restoreToClipboard: (id: number) => Promise<void>;
@@ -50,6 +53,7 @@ export const useClipStore = create<ClipStore>((set, get) => ({
   selectedId: null,
   license: null,
   isLoading: false,
+  maxItems: 50,
 
   setSearchQuery: (q) => {
     set({ searchQuery: q });
@@ -66,17 +70,36 @@ export const useClipStore = create<ClipStore>((set, get) => ({
   fetchHistory: async () => {
     set({ isLoading: true });
     try {
-      const { searchQuery, activeFilter } = get();
+      const { searchQuery, activeFilter, maxItems } = get();
       const items = await invoke<ClipboardItem[]>('get_history', {
         search: searchQuery || null,
         contentType: activeFilter === 'all' ? null : activeFilter,
-        limit: 100,
+        limit: maxItems,
         offset: 0,
       });
       set({ items, isLoading: false });
     } catch (e) {
       console.error('Failed to fetch history:', e);
       set({ isLoading: false });
+    }
+  },
+
+  fetchMaxItems: async () => {
+    try {
+      const maxItems = await invoke<number>('get_max_items');
+      set({ maxItems });
+    } catch (e) {
+      console.error('Failed to fetch max items:', e);
+    }
+  },
+
+  setMaxItems: async (n) => {
+    try {
+      await invoke('set_max_items', { maxItems: n });
+      set({ maxItems: n });
+      get().fetchHistory();
+    } catch (e) {
+      console.error('Failed to set max items:', e);
     }
   },
 

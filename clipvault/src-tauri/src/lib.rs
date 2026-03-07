@@ -12,10 +12,11 @@ extern crate objc;
 
 use std::sync::{Arc, Mutex};
 use tauri::{
-    Manager,
+    Emitter, Manager,
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     menu::{MenuBuilder, MenuItemBuilder},
 };
+use tauri_plugin_updater::UpdaterExt;
 use log::info;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -31,6 +32,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(move |app| {
             info!("SmartClip starting...");
 
@@ -243,6 +245,22 @@ pub fn run() {
                 lm,
             );
 
+            // -- Check for updates on launch --
+            let update_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                match update_handle.updater() {
+                    Ok(updater) => match updater.check().await {
+                        Ok(Some(update)) => {
+                            info!("Update available: {}", update.version);
+                            let _ = update_handle.emit("update-available", &update.version);
+                        }
+                        Ok(None) => info!("App is up to date."),
+                        Err(e) => info!("Update check failed: {}", e),
+                    },
+                    Err(e) => info!("Updater init failed: {}", e),
+                }
+            });
+
             info!("SmartClip ready (menu bar mode).");
             Ok(())
         })
@@ -257,6 +275,8 @@ pub fn run() {
             commands::revalidate_license,
             commands::get_checkout_url,
             commands::get_customer_portal_url,
+            commands::get_max_items,
+            commands::set_max_items,
         ])
         .run(tauri::generate_context!())
         .expect("error while running ClipVault");

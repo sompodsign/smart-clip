@@ -5,6 +5,8 @@ import { useClipStore } from './store/clipStore';
 import { SearchBar } from './components/SearchBar';
 import { ClipList } from './components/ClipList';
 import { LicenseGate } from './components/LicenseGate';
+import { UpdateBanner } from './components/UpdateBanner';
+import { SettingsMenu } from './components/SettingsMenu';
 import './App.css';
 
 const HEADER_H = 40;
@@ -17,11 +19,12 @@ const MAX_H = 9999;
 const PANEL_W = 340;
 
 function App() {
-  const { fetchHistory, fetchLicenseStatus, items, license } = useClipStore();
+  const { fetchHistory, fetchLicenseStatus, fetchMaxItems, items, license } = useClipStore();
 
   useEffect(() => {
     fetchHistory();
     fetchLicenseStatus();
+    fetchMaxItems();
 
     const unlisten = listen('clipboard-change', () => {
       fetchHistory();
@@ -30,7 +33,7 @@ function App() {
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [fetchHistory, fetchLicenseStatus]);
+  }, [fetchHistory, fetchLicenseStatus, fetchMaxItems]);
 
   // Dynamically resize window based on item count
   useEffect(() => {
@@ -50,14 +53,18 @@ function App() {
         <div className="app-brand">
           <h1 className="app-title">SmartClip</h1>
         </div>
-        <div className="item-counter">
-          <span className="counter-num">{itemCount}</span>
-          <span className="counter-label">
-            {isPro ? ' items' : ' / 5'}
-          </span>
+        <div className="header-right">
+          <SettingsMenu />
+          <div className="item-counter">
+            <span className="counter-num">{itemCount}</span>
+            <span className="counter-label">
+              {isPro ? ' items' : ' / 5'}
+            </span>
+          </div>
         </div>
       </header>
 
+      <UpdateBanner />
       <SearchBar />
       <ClipList />
 

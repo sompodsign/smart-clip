@@ -119,3 +119,21 @@ pub fn get_customer_portal_url(license: State<LicenseState>) -> Result<String, S
     let lm = license.lock().map_err(|e| e.to_string())?;
     Ok(lm.customer_portal_url())
 }
+
+// ── Settings commands ──
+
+#[tauri::command]
+pub fn get_max_items(db: State<DbState>) -> Result<i64, String> {
+    let db = db.lock().map_err(|e| e.to_string())?;
+    Ok(db.get_max_items())
+}
+
+#[tauri::command]
+pub fn set_max_items(db: State<DbState>, max_items: i64) -> Result<(), String> {
+    let db = db.lock().map_err(|e| e.to_string())?;
+    db.set_setting("max_items", &max_items.to_string())
+        .map_err(|e| e.to_string())?;
+    // Immediately enforce the new limit
+    db.enforce_limit(max_items).map_err(|e| e.to_string())?;
+    Ok(())
+}

@@ -87,7 +87,7 @@ fn handle_text_entry(
         return;
     }
 
-    // Check free tier limit
+    // Enforce item limits
     if !is_pro(&license_manager) {
         if let Ok(count) = db.count_items() {
             if count >= FREE_TIER_LIMIT {
@@ -95,6 +95,10 @@ fn handle_text_entry(
                 let _ = db.enforce_limit(FREE_TIER_LIMIT - 1);
             }
         }
+    } else {
+        // Pro users: enforce the user-configured max items limit
+        let max_items = db.get_max_items();
+        let _ = db.enforce_limit(max_items - 1);
     }
 
     // Detect content type
@@ -142,13 +146,17 @@ fn handle_image_entry(
         return;
     }
 
-    // Free tier limit
+    // Enforce item limits
     if !is_pro(&license_manager) {
         if let Ok(count) = db.count_items() {
             if count >= FREE_TIER_LIMIT {
                 let _ = db.enforce_limit(FREE_TIER_LIMIT - 1);
             }
         }
+    } else {
+        // Pro users: enforce the user-configured max items limit
+        let max_items = db.get_max_items();
+        let _ = db.enforce_limit(max_items - 1);
     }
 
     // Save image + thumbnail
