@@ -12,6 +12,7 @@ authentic, helpful responses — never spam, never hard-sell.
 ## The Golden Rule
 Answer the question fully first. Mention SmartClip only if it directly solves their problem.
 If SmartClip isn't the right fit, say so — this builds trust for when it is.
+Do not force links into replies. Mention the product first; add the website only when the thread context clearly calls for it.
 
 ## Reddit Monitoring Queries
 Search these weekly and save relevant threads:
@@ -69,3 +70,8 @@ Happy to send you a Pro license to try. No ask beyond honest feedback.
 Save monitored threads to `output/community-threads-[date].md`
 Save reply drafts to `output/drafts/reddit-replies-[date].md`
 Save outreach list to `output/drafts/outreach-list-[date].md`
+
+For reply drafts, include:
+- `Recommended Day`
+- `Publish Condition`
+- `Link Strategy`

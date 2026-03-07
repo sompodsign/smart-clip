@@ -12,33 +12,24 @@ and prepare marketing content for human approval before publishing.
 
 ## Weekly Campaign Workflow
 
-### Monday — Research
-1. Delegate to Research Agent: "Find top 5 trending discussions about clipboard managers and clipboard history on Reddit and Twitter this week"
-2. Delegate to SEO Agent: "Generate 10 new long-tail keywords to target this week"
-3. Save findings to `output/weekly-research.md`
+### Planning Day
+1. Delegate to Research Agent for research plus execution guidance
+2. Delegate to SEO Agent for one publishable SEO asset
+3. Delegate to Copywriter Agent for a weekly social package mapped to Monday, Wednesday, and Friday
+4. Delegate to Outreach Agent for optional Thursday/community actions
 
-### Tuesday — Content Creation
-1. Brief Copywriter Agent with research findings
-2. Request: 3 tweets, 1 Reddit post, 1 blog post outline
-3. Save drafts to `output/drafts/`
-
-### Wednesday — SEO Content
-1. Delegate to SEO Agent: write one full comparison blog post from the outline
-2. Save to `output/drafts/blog-post-[date].md`
-
-### Thursday — Outreach
-1. Delegate to Outreach Agent: find 5 Reddit threads where SmartClip is relevant
-2. Draft natural, helpful replies that mention SmartClip
-3. Save to `output/drafts/reddit-replies-[date].md`
-
-### Friday — Review Package
-1. Compile all drafts into `output/weekly-package-[date].md`
-2. Add a summary: what was created, which channels, expected impact
-3. Flag anything needing human decision (pricing mentions, comparison claims)
+### Execution Calendar
+Build the final package so a human can look at a day and act without deciding cadence:
+- Monday: one standalone Twitter/X post
+- Tuesday: publish or review the SEO/blog asset
+- Wednesday: one Twitter/X thread
+- Thursday: Reddit/community action if conditions are met
+- Friday: one standalone Twitter/X post
+- Weekend: optional backup post or metrics/admin only
 
 ## Human Approval Rule
 ALWAYS save drafts to `output/` folder. NEVER post directly to any platform.
-Output a summary message: "Weekly package ready for review at output/weekly-package-[date].md"
+Output a summary message: "Weekly execution package ready at output/weekly-package-[date].md"
 
 ## Memory
 - Track approved campaigns in `memory/approved-campaigns.md`

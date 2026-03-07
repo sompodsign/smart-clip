@@ -6,6 +6,11 @@ SmartClip is a macOS clipboard manager that silently captures everything you cop
 ## Website
 https://smartclip.shampadsr.com
 
+## URL Usage
+- Primary website / default CTA URL: https://smartclip.shampadsr.com
+- Do not invent deep links, pricing links, or download links unless they are explicitly added here later.
+- Do not force a URL into every post. Use the website URL only when the content has a clear call to action.
+
 ## How It Works
 1. SmartClip runs in the background as a lightweight process
 2. Every time you copy text or an image, SmartClip saves it automatically
