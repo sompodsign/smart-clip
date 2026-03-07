@@ -76,3 +76,9 @@ jobs:
             cp "$DMG" "SmartClip_latest_${ARCH}.dmg"
             gcloud storage cp "SmartClip_latest_${ARCH}.dmg" gs://capaccino/
           fi
+
+      - name: Upload latest.json to GCS
+        run: |
+          if [ -f clipvault/src-tauri/target/release/bundle/macos/latest.json ]; then
+            gcloud storage cp clipvault/src-tauri/target/release/bundle/macos/latest.json gs://capaccino/latest.json
+          fi
