@@ -61,8 +61,50 @@ impl Database {
             [],
         )?;
 
+        // Settings table for user preferences
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS settings (
+                key   TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )",
+            [],
+        )?;
+
         info!("Database initialized at {:?}", db_path);
         Ok(Self { conn })
+    }
+
+    // ── Settings helpers ──
+
+    /// Get a setting value by key.
+    pub fn get_setting(&self, key: &str) -> SqliteResult<Option<String>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT value FROM settings WHERE key = ?1"
+        )?;
+        let mut rows = stmt.query_map(params![key], |row| row.get(0))?;
+        match rows.next() {
+            Some(Ok(val)) => Ok(Some(val)),
+            _ => Ok(None),
+        }
+    }
+
+    /// Set a setting value (upsert).
+    pub fn set_setting(&self, key: &str, value: &str) -> SqliteResult<()> {
+        self.conn.execute(
+            "INSERT INTO settings (key, value) VALUES (?1, ?2)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            params![key, value],
+        )?;
+        Ok(())
+    }
+
+    /// Get the max items setting (defaults to 50).
+    pub fn get_max_items(&self) -> i64 {
+        self.get_setting("max_items")
+            .ok()
+            .flatten()
+            .and_then(|v| v.parse::<i64>().ok())
+            .unwrap_or(50)
     }
 
     /// Insert a new clipboard item. Returns the new row ID.
