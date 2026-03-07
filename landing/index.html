@@ -845,20 +845,35 @@
   </script>
 
   <script>
-    // Auto-detect latest DMG from GitHub release → build GCS URL
+    // Detect CPU architecture and set correct DMG download
     (async function() {
+      // Detect Apple Silicon vs Intel
+      let arch = 'aarch64'; // default to Apple Silicon (most Macs since 2020)
+      try {
+        if (navigator.userAgentData) {
+          const ua = await navigator.userAgentData.getHighEntropyValues(['architecture']);
+          if (ua.architecture === 'x86') arch = 'x64';
+        } else if (/Intel/.test(navigator.userAgent)) {
+          arch = 'x64';
+        }
+      } catch (e) {}
+
+      // Update fallback URLs with detected arch
+      const fallback = 'https://storage.googleapis.com/capaccino/SmartClip_latest_' + arch + '.dmg';
+      document.querySelectorAll('.download-dmg').forEach(el => { el.href = fallback; });
+
+      // Try to get exact version from GitHub API
       try {
         const resp = await fetch('https://api.github.com/repos/sompodsign/smart-clip/releases/latest');
         if (!resp.ok) return;
         const data = await resp.json();
-        const dmg = data.assets.find(a => a.name.endsWith('_aarch64.dmg'));
+        const suffix = '_' + arch + '.dmg';
+        const dmg = data.assets.find(a => a.name.endsWith(suffix));
         if (dmg) {
           const gcsUrl = 'https://storage.googleapis.com/capaccino/' + dmg.name;
-          document.querySelectorAll('.download-dmg').forEach(el => {
-            el.href = gcsUrl;
-          });
+          document.querySelectorAll('.download-dmg').forEach(el => { el.href = gcsUrl; });
         }
-      } catch (e) { /* fallback to hardcoded URL */ }
+      } catch (e) { /* fallback already set */ }
     })();
   </script>
 
