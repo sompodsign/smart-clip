@@ -21,6 +21,7 @@ marketing-agent/
 │   └── outreach.md         # Community replies, Product Hunt, influencer outreach
 ├── output/                 # All generated content (gitignored)
 │   ├── drafts/             # Individual content pieces
+│   ├── weekly-execution-*.md # Day-by-day plan for the upcoming week
 │   └── weekly-package-*.md # Full weekly review package
 └── memory/                 # Persistent state across runs
     ├── performance-notes.md # What's working
@@ -56,10 +57,10 @@ python run.py --task outreach   # Reddit replies + PH + influencer emails
 ## Workflow
 
 1. Run `python run.py` (takes ~2-3 minutes)
-2. Open `output/weekly-package-[date].md`
-3. Review each draft — edit as needed
-4. Publish approved content manually to each channel
-5. Update `memory/posted-log.md` with what you published
+2. Open `output/weekly-execution-[date].md`
+3. Follow the day-by-day plan instead of posting everything at once
+4. Open `output/weekly-package-[date].md` when you want the full draft set and research context
+5. Update `memory/posted-log.md` with what you actually published
 6. Update `memory/performance-notes.md` with what performed well
 
 ## Channels the Agent Targets
@@ -77,7 +78,7 @@ python run.py --task outreach   # Reddit replies + PH + influencer emails
 
 - Edit `context/product.md` when pricing or features change
 - Edit `context/icp.md` when you learn more about your customers
-- Edit `context/brand-voice.md` to adjust tone
+- Edit `context/brand-voice.md` to adjust tone, link rules, and posting cadence
 - Edit individual agent files in `agents/` to change what each produces
 
 ## Memory
