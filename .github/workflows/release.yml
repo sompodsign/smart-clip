@@ -62,7 +62,10 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCS_SERVICE_KEY }}
 
-      - name: Upload DMG to GCS
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Upload DMG to GCS (versioned)
         uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: clipvault/src-tauri/target
