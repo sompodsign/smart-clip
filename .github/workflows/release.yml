@@ -86,7 +86,7 @@ jobs:
       - name: Update Homebrew cask
         if: contains(matrix.args, 'aarch64')
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
         run: |
           DMG=$(find clipvault/src-tauri/target -name '*.dmg' | head -1)
           if [ -z "$DMG" ]; then exit 0; fi
