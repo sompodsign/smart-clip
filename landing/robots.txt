@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://smartclip.shampadsr.com/sitemap.xml
