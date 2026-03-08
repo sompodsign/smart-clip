@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blog — SmartClip</title>
+  <meta name="description" content="macOS tips, clipboard management guides, and productivity insights from the SmartClip team." />
+  <link rel="canonical" href="https://smartclip.shampadsr.com/blog/" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0b0b0e;
+      --surface:   #131318;
+      --surface2:  #1c1c24;
+      --border:    rgba(255,255,255,0.07);
+      --border2:   rgba(255,255,255,0.12);
+      --accent:    #7b6cf6;
+      --accent2:   #a78bfa;
+      --accent-glow: rgba(123,108,246,0.35);
+      --text:      #f0f0f8;
+      --muted:     #8080a0;
+      --muted2:    #5a5a78;
+      --green:     #34d399;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    /* ── NAVBAR ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      padding: 16px 0;
+      background: rgba(11,11,14,0.8);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--border);
+    }
+    nav .container { display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 17px; font-weight: 700; color: var(--text); text-decoration: none;
+    }
+    .nav-logo-icon {
+      width: 30px; height: 30px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      box-shadow: 0 0 18px var(--accent-glow);
+    }
+    .nav-links { display: flex; align-items: center; gap: 8px; }
+    .nav-link {
+      color: var(--muted); font-size: 14px; font-weight: 500; text-decoration: none;
+      padding: 7px 14px; border-radius: 8px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .nav-link:hover { color: var(--text); background: var(--surface2); }
+    .nav-link.active { color: var(--text); }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 20px; border-radius: 10px; font-size: 14px; font-weight: 600;
+      cursor: pointer; text-decoration: none; border: none; transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #9d7cf8);
+      color: #fff;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 28px var(--accent-glow); }
+
+    /* ── HERO ── */
+    .blog-hero {
+      padding: 80px 0 60px;
+      text-align: center;
+      position: relative;
+    }
+    .blog-hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 400px;
+      background: radial-gradient(ellipse at center, rgba(123,108,246,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .blog-hero-label {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(123,108,246,0.12);
+      border: 1px solid rgba(123,108,246,0.3);
+      color: var(--accent2);
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 4px 12px; border-radius: 100px;
+      margin-bottom: 20px;
+    }
+    .blog-hero h1 {
+      font-size: clamp(36px, 6vw, 60px);
+      font-weight: 800; letter-spacing: -0.03em; line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .blog-hero h1 span {
+      background: linear-gradient(135deg, #fff 30%, var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .blog-hero p {
+      font-size: 17px; color: var(--muted); max-width: 460px; margin: 0 auto;
+    }
+
+    /* ── POSTS GRID ── */
+    .posts-section { padding: 0 0 100px; position: relative; z-index: 1; }
+
+    .posts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+      margin-top: 48px;
+    }
+
+    .post-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      text-decoration: none;
+      display: flex; flex-direction: column;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .post-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .post-card:hover {
+      border-color: rgba(123,108,246,0.3);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(123,108,246,0.1);
+    }
+    .post-card:hover::before { opacity: 1; }
+
+    .post-category {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--accent2); margin-bottom: 14px;
+    }
+
+    .post-title {
+      font-size: 20px; font-weight: 700; line-height: 1.3; letter-spacing: -0.02em;
+      color: var(--text); margin-bottom: 12px;
+      flex: 1;
+    }
+
+    .post-excerpt {
+      font-size: 14px; color: var(--muted); line-height: 1.65;
+      margin-bottom: 24px;
+    }
+
+    .post-meta {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 12px; color: var(--muted2);
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+    }
+    .post-read-more {
+      color: var(--accent2); font-weight: 600;
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    /* Featured post */
+    .post-card.featured {
+      grid-column: 1 / -1;
+      flex-direction: row;
+      gap: 40px;
+      align-items: flex-start;
+      padding: 36px;
+      background: linear-gradient(135deg, rgba(123,108,246,0.07), var(--surface));
+      border-color: rgba(123,108,246,0.2);
+    }
+    .post-card.featured .post-content { flex: 1; }
+    .post-card.featured .post-title { font-size: 26px; }
+    .post-card.featured .post-excerpt { font-size: 15px; }
+    .post-featured-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(123,108,246,0.15); border: 1px solid rgba(123,108,246,0.3);
+      color: var(--accent2); font-size: 11px; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 3px 10px; border-radius: 100px; margin-bottom: 16px;
+    }
+    .post-icon {
+      width: 80px; height: 80px;
+      background: linear-gradient(135deg, rgba(123,108,246,0.2), rgba(167,139,250,0.1));
+      border: 1px solid rgba(123,108,246,0.2);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
+      flex-shrink: 0;
+    }
+
+    /* Empty state */
+    .more-coming {
+      text-align: center; padding: 60px 24px;
+      color: var(--muted); font-size: 14px;
+    }
+    .more-coming strong { color: var(--text); display: block; font-size: 16px; margin-bottom: 8px; }
+
+    /* FOOTER */
+    footer {
+      padding: 40px 0;
+      border-top: 1px solid var(--border);
+      position: relative; z-index: 1;
+    }
+    footer .container {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .footer-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 16px; font-weight: 700; color: var(--text); text-decoration: none;
+    }
+    .footer-logo-icon {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+    .footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+    .footer-link {
+      color: var(--muted); font-size: 13px; text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-link:hover { color: var(--text); }
+    .footer-copy { color: var(--muted2); font-size: 12px; }
+
+    @media (max-width: 700px) {
+      .nav-links .nav-link { display: none; }
+      .post-card.featured { flex-direction: column; gap: 20px; }
+      .post-icon { width: 56px; height: 56px; font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav>
+    <div class="container">
+      <a href="/" class="nav-logo">
+        <div class="nav-logo-icon">&#128203;</div>
+        SmartClip
+      </a>
+      <div class="nav-links">
+        <a href="/#features" class="nav-link">Features</a>
+        <a href="/#pricing" class="nav-link">Pricing</a>
+        <a href="/#faq" class="nav-link">FAQ</a>
+        <a href="/blog/" class="nav-link active">Blog</a>
+        <a href="/#pricing" class="btn btn-primary" style="margin-left:8px;">Get SmartClip &rarr;</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="blog-hero">
+    <div class="container">
+      <div class="blog-hero-label">SmartClip Blog</div>
+      <h1><span>macOS Tips</span> &amp; Clipboard<br>Management Guides</h1>
+      <p>Practical guides for getting more out of your Mac's clipboard — and the apps that fix what macOS doesn't.</p>
+    </div>
+  </section>
+
+  <!-- POSTS -->
+  <section class="posts-section">
+    <div class="container">
+      <div class="posts-grid">
+
+        <!-- Featured post -->
+        <a href="/blog/does-mac-have-clipboard-history/" class="post-card featured">
+          <div class="post-icon">&#128203;</div>
+          <div class="post-content">
+            <div class="post-featured-badge">Featured</div>
+            <div class="post-category">macOS Tips</div>
+            <h2 class="post-title">Does Mac Have Clipboard History? (And the Best Free Fix in 2026)</h2>
+            <p class="post-excerpt">macOS has no built-in clipboard history — and it never has. Here's exactly why, what Apple actually gives you instead (including what Universal Clipboard really is), and the fastest free fix in 2026.</p>
+            <div class="post-meta">
+              <span>March 2026 · 5 min read</span>
+              <span class="post-read-more">Read article →</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Placeholder cards for future posts -->
+        <div class="post-card" style="opacity: 0.4; pointer-events: none; cursor: default;">
+          <div class="post-category">Productivity</div>
+          <div class="post-title">How Clipboard Managers Save Developers Time</div>
+          <p class="post-excerpt">Coming soon — how engineers use clipboard history to move faster between terminals, editors, and browsers.</p>
+          <div class="post-meta">
+            <span>Coming soon</span>
+            <span class="post-read-more" style="color: var(--muted2);">Soon →</span>
+          </div>
+        </div>
+
+        <div class="post-card" style="opacity: 0.4; pointer-events: none; cursor: default;">
+          <div class="post-category">Comparison</div>
+          <div class="post-title">SmartClip vs Paste: Which Clipboard Manager Is Right for You?</div>
+          <p class="post-excerpt">Coming soon — a head-to-head comparison of the two most popular clipboard managers on macOS in 2026.</p>
+          <div class="post-meta">
+            <span>Coming soon</span>
+            <span class="post-read-more" style="color: var(--muted2);">Soon →</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      <a href="/" class="footer-logo">
+        <div class="footer-logo-icon">&#128203;</div>
+        <span>SmartClip</span>
+      </a>
+      <div class="footer-links">
+        <a href="/blog/" class="footer-link">Blog</a>
+        <a href="mailto:hello@shampadsr.com" class="footer-link">Support</a>
+        <a href="https://shampad.lemonsqueezy.com/billing" class="footer-link" target="_blank" rel="noopener">Manage License</a>
+        <a href="/#faq" class="footer-link">Privacy</a>
+      </div>
+      <span class="footer-copy">&copy; 2026 Shampad. All rights reserved.</span>
+    </div>
+  </footer>
+
+</body>
+</html>
