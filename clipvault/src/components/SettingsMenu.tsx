@@ -12,7 +12,7 @@ export function SettingsMenu() {
   const [updateStatus, setUpdateStatus] = useState<UpdateCheckStatus>('idle');
   const [progress, setProgress] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { maxItems, setMaxItems } = useClipStore();
+  const { maxItems, setMaxItems, plainTextOnly, setPlainTextOnly } = useClipStore();
 
   // Close on click outside
   useEffect(() => {
@@ -89,6 +89,23 @@ export function SettingsMenu() {
                   {n}
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div className="settings-divider" />
+
+          <div className="settings-section">
+            <div className="settings-toggle-row">
+              <span className="settings-label" style={{ marginBottom: 0 }}>Plain Text Only</span>
+              <button
+                className={`toggle-switch${plainTextOnly ? ' active' : ''}`}
+                onClick={() => setPlainTextOnly(!plainTextOnly)}
+                role="switch"
+                aria-checked={plainTextOnly}
+                title="Strip formatting from copied text"
+              >
+                <span className="toggle-slider" />
+              </button>
             </div>
           </div>
 

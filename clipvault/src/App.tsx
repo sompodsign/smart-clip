@@ -19,12 +19,13 @@ const MAX_H = 9999;
 const PANEL_W = 340;
 
 function App() {
-  const { fetchHistory, fetchLicenseStatus, fetchMaxItems, items, license } = useClipStore();
+  const { fetchHistory, fetchLicenseStatus, fetchMaxItems, fetchPlainTextOnly, items, license } = useClipStore();
 
   useEffect(() => {
     fetchHistory();
     fetchLicenseStatus();
     fetchMaxItems();
+    fetchPlainTextOnly();
 
     const unlisten = listen('clipboard-change', () => {
       fetchHistory();
@@ -33,7 +34,7 @@ function App() {
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [fetchHistory, fetchLicenseStatus, fetchMaxItems]);
+  }, [fetchHistory, fetchLicenseStatus, fetchMaxItems, fetchPlainTextOnly]);
 
   // Dynamically resize window based on item count
   useEffect(() => {

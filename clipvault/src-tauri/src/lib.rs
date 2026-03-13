@@ -277,6 +277,8 @@ pub fn run() {
             commands::get_customer_portal_url,
             commands::get_max_items,
             commands::set_max_items,
+            commands::get_plain_text_only,
+            commands::set_plain_text_only,
         ])
         .run(tauri::generate_context!())
         .expect("error while running ClipVault");

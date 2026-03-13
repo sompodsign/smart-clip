@@ -47,7 +47,11 @@ pub fn start_polling(
                     let hash = compute_hash(text.as_bytes());
                     if last_text_hash.as_deref() != Some(&hash) {
                         last_text_hash = Some(hash.clone());
-                        handle_text_entry(&app_handle, &db, &license_manager, &text, &hash);
+
+                        // Also capture HTML content if available (for rich text)
+                        let html_content = clipboard.get().html().ok().filter(|h: &String| !h.trim().is_empty());
+
+                        handle_text_entry(&app_handle, &db, &license_manager, &text, html_content.as_deref(), &hash);
                     }
                 }
             }
@@ -74,6 +78,7 @@ fn handle_text_entry(
     db: &Arc<Mutex<Database>>,
     license_manager: &Arc<Mutex<LicenseManager>>,
     text: &str,
+    html_content: Option<&str>,
     hash: &str,
 ) {
     let db = db.lock().unwrap();
@@ -107,6 +112,7 @@ fn handle_text_entry(
     let new_item = NewClipboardItem {
         content_type: content_type.to_string(),
         text_value: Some(text.to_string()),
+        html_value: html_content.map(|h| h.to_string()),
         image_path: None,
         thumb_path: None,
         hash: hash.to_string(),
@@ -115,7 +121,7 @@ fn handle_text_entry(
 
     match db.insert(&new_item) {
         Ok(id) => {
-            info!("Stored {} entry (id={})", content_type, id);
+            info!("Stored {} entry (id={}, has_html={})", content_type, id, html_content.is_some());
             let _ = app_handle.emit("clipboard-change", ClipboardChangeEvent {
                 item_id: id,
                 content_type: content_type.to_string(),
@@ -165,6 +171,7 @@ fn handle_image_entry(
             let new_item = NewClipboardItem {
                 content_type: "image".to_string(),
                 text_value: None,
+                html_value: None,
                 image_path: Some(image_path),
                 thumb_path: Some(thumb_path),
                 hash: hash.to_string(),
