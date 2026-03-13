@@ -5,6 +5,7 @@ export interface ClipboardItem {
   id: number;
   content_type: string;
   text_value: string | null;
+  html_value: string | null;
   image_path: string | null;
   thumb_path: string | null;
   hash: string;
@@ -28,6 +29,7 @@ interface ClipStore {
   license: LicenseEntitlement | null;
   isLoading: boolean;
   maxItems: number;
+  plainTextOnly: boolean;
 
   setSearchQuery: (q: string) => void;
   setActiveFilter: (f: string) => void;
@@ -35,6 +37,8 @@ interface ClipStore {
   fetchHistory: () => Promise<void>;
   fetchMaxItems: () => Promise<void>;
   setMaxItems: (n: number) => Promise<void>;
+  fetchPlainTextOnly: () => Promise<void>;
+  setPlainTextOnly: (enabled: boolean) => Promise<void>;
   pinItem: (id: number) => Promise<void>;
   deleteItem: (id: number) => Promise<void>;
   restoreToClipboard: (id: number) => Promise<void>;
@@ -54,6 +58,7 @@ export const useClipStore = create<ClipStore>((set, get) => ({
   license: null,
   isLoading: false,
   maxItems: 50,
+  plainTextOnly: false,
 
   setSearchQuery: (q) => {
     set({ searchQuery: q });
@@ -100,6 +105,24 @@ export const useClipStore = create<ClipStore>((set, get) => ({
       get().fetchHistory();
     } catch (e) {
       console.error('Failed to set max items:', e);
+    }
+  },
+
+  fetchPlainTextOnly: async () => {
+    try {
+      const enabled = await invoke<boolean>('get_plain_text_only');
+      set({ plainTextOnly: enabled });
+    } catch (e) {
+      console.error('Failed to fetch plain text only setting:', e);
+    }
+  },
+
+  setPlainTextOnly: async (enabled) => {
+    try {
+      await invoke('set_plain_text_only', { enabled });
+      set({ plainTextOnly: enabled });
+    } catch (e) {
+      console.error('Failed to set plain text only:', e);
     }
   },
 

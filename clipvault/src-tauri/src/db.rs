@@ -8,6 +8,7 @@ pub struct ClipboardItem {
     pub id: i64,
     pub content_type: String,
     pub text_value: Option<String>,
+    pub html_value: Option<String>,
     pub image_path: Option<String>,
     pub thumb_path: Option<String>,
     pub hash: String,
@@ -20,6 +21,7 @@ pub struct ClipboardItem {
 pub struct NewClipboardItem {
     pub content_type: String,
     pub text_value: Option<String>,
+    pub html_value: Option<String>,
     pub image_path: Option<String>,
     pub thumb_path: Option<String>,
     pub hash: String,
@@ -71,6 +73,18 @@ impl Database {
         )?;
 
         info!("Database initialized at {:?}", db_path);
+
+        // Migration: add html_value column if it doesn't exist
+        let has_html_col: bool = conn
+            .prepare("SELECT COUNT(*) FROM pragma_table_info('clipboard_items') WHERE name='html_value'")
+            .and_then(|mut stmt| stmt.query_row([], |row| row.get::<_, i64>(0)))
+            .map(|c| c > 0)
+            .unwrap_or(false);
+        if !has_html_col {
+            conn.execute("ALTER TABLE clipboard_items ADD COLUMN html_value TEXT", []).ok();
+            info!("Migrated: added html_value column");
+        }
+
         Ok(Self { conn })
     }
 
@@ -107,15 +121,25 @@ impl Database {
             .unwrap_or(50)
     }
 
+    /// Get the plain_text_only setting (defaults to false).
+    pub fn get_plain_text_only(&self) -> bool {
+        self.get_setting("plain_text_only")
+            .ok()
+            .flatten()
+            .map(|v| v == "true")
+            .unwrap_or(false)
+    }
+
     /// Insert a new clipboard item. Returns the new row ID.
     pub fn insert(&self, item: &NewClipboardItem) -> SqliteResult<i64> {
         let now = chrono::Utc::now().timestamp();
         self.conn.execute(
-            "INSERT INTO clipboard_items (content_type, text_value, image_path, thumb_path, hash, pinned, created_at, app_source)
-             VALUES (?1, ?2, ?3, ?4, ?5, 0, ?6, ?7)",
+            "INSERT INTO clipboard_items (content_type, text_value, html_value, image_path, thumb_path, hash, pinned, created_at, app_source)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7, ?8)",
             params![
                 item.content_type,
                 item.text_value,
+                item.html_value,
                 item.image_path,
                 item.thumb_path,
                 item.hash,
@@ -146,7 +170,7 @@ impl Database {
         offset: i64,
     ) -> SqliteResult<Vec<ClipboardItem>> {
         let mut query = String::from(
-            "SELECT id, content_type, text_value, image_path, thumb_path, hash, pinned, created_at, app_source
+            "SELECT id, content_type, text_value, html_value, image_path, thumb_path, hash, pinned, created_at, app_source
              FROM clipboard_items WHERE 1=1"
         );
         let mut param_values: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
@@ -179,12 +203,13 @@ impl Database {
                 id: row.get(0)?,
                 content_type: row.get(1)?,
                 text_value: row.get(2)?,
-                image_path: row.get(3)?,
-                thumb_path: row.get(4)?,
-                hash: row.get(5)?,
-                pinned: row.get::<_, i32>(6)? != 0,
-                created_at: row.get(7)?,
-                app_source: row.get(8)?,
+                html_value: row.get(3)?,
+                image_path: row.get(4)?,
+                thumb_path: row.get(5)?,
+                hash: row.get(6)?,
+                pinned: row.get::<_, i32>(7)? != 0,
+                created_at: row.get(8)?,
+                app_source: row.get(9)?,
             })
         })?;
 
@@ -257,7 +282,7 @@ impl Database {
     /// Get a single item by ID.
     pub fn get_item(&self, id: i64) -> SqliteResult<Option<ClipboardItem>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, content_type, text_value, image_path, thumb_path, hash, pinned, created_at, app_source
+            "SELECT id, content_type, text_value, html_value, image_path, thumb_path, hash, pinned, created_at, app_source
              FROM clipboard_items WHERE id = ?1"
         )?;
 
@@ -266,12 +291,13 @@ impl Database {
                 id: row.get(0)?,
                 content_type: row.get(1)?,
                 text_value: row.get(2)?,
-                image_path: row.get(3)?,
-                thumb_path: row.get(4)?,
-                hash: row.get(5)?,
-                pinned: row.get::<_, i32>(6)? != 0,
-                created_at: row.get(7)?,
-                app_source: row.get(8)?,
+                html_value: row.get(3)?,
+                image_path: row.get(4)?,
+                thumb_path: row.get(5)?,
+                hash: row.get(6)?,
+                pinned: row.get::<_, i32>(7)? != 0,
+                created_at: row.get(8)?,
+                app_source: row.get(9)?,
             })
         })?;
 

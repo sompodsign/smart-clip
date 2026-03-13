@@ -46,6 +46,7 @@ pub fn restore_to_clipboard(db: State<DbState>, id: i64) -> Result<(), String> {
     let item = db_guard.get_item(id)
         .map_err(|e| e.to_string())?
         .ok_or("Item not found")?;
+    let plain_text_only = db_guard.get_plain_text_only();
 
     // Drop the DB lock before clipboard operations
     drop(db_guard);
@@ -70,7 +71,17 @@ pub fn restore_to_clipboard(db: State<DbState>, id: i64) -> Result<(), String> {
         }
         _ => {
             if let Some(text) = &item.text_value {
-                clipboard.set_text(text).map_err(|e| format!("Clipboard error: {}", e))?;
+                if !plain_text_only {
+                    // Restore with HTML formatting if available
+                    if let Some(html) = &item.html_value {
+                        clipboard.set_html(html, Some(text)).map_err(|e| format!("Clipboard error: {}", e))?;
+                    } else {
+                        clipboard.set_text(text).map_err(|e| format!("Clipboard error: {}", e))?;
+                    }
+                } else {
+                    // Plain text only — strip all formatting
+                    clipboard.set_text(text).map_err(|e| format!("Clipboard error: {}", e))?;
+                }
             } else {
                 return Err("No text value to restore.".to_string());
             }
@@ -136,4 +147,17 @@ pub fn set_max_items(db: State<DbState>, max_items: i64) -> Result<(), String> {
     // Immediately enforce the new limit
     db.enforce_limit(max_items).map_err(|e| e.to_string())?;
     Ok(())
+}
+
+#[tauri::command]
+pub fn get_plain_text_only(db: State<DbState>) -> Result<bool, String> {
+    let db = db.lock().map_err(|e| e.to_string())?;
+    Ok(db.get_plain_text_only())
+}
+
+#[tauri::command]
+pub fn set_plain_text_only(db: State<DbState>, enabled: bool) -> Result<(), String> {
+    let db = db.lock().map_err(|e| e.to_string())?;
+    db.set_setting("plain_text_only", if enabled { "true" } else { "false" })
+        .map_err(|e| e.to_string())
 }

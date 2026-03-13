@@ -1,5 +1,6 @@
 import { useClipStore, ClipboardItem } from '../store/clipStore';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 interface ItemCardProps {
   item: ClipboardItem;
@@ -9,10 +10,12 @@ export function ItemCard({ item }: ItemCardProps) {
   const { pinItem, deleteItem, restoreToClipboard, selectedId, setSelectedId } = useClipStore();
   const isSelected = selectedId === item.id;
 
-  const handleClick = () => {
-    restoreToClipboard(item.id);
+  const handleClick = async () => {
+    await restoreToClipboard(item.id);
     setSelectedId(item.id);
-    setTimeout(() => setSelectedId(null), 1500);
+    // Hide the panel after copying
+    getCurrentWindow().hide().catch(() => {});
+    setTimeout(() => setSelectedId(null), 300);
   };
 
   const preview = () => {
