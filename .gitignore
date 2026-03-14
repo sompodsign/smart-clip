@@ -1,5 +1,26 @@
-# Marketing agent generated output
-marketing-agent/output/
+# macOS
+.DS_Store
 
-# Environment variables
-marketing-agent/.env
+# Swift / SPM
+.build/
+.swiftpm/
+Package.resolved
+
+# Xcode
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+DerivedData/
+*.pbxuser
+*.perspectivev3
+*.xcuserstate
+
+# Build artifacts
+*.dmg
+*.app
+*.dSYM.zip
+*.dSYM
+
+# IDE
+.vscode/
+.idea/
