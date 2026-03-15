@@ -6,56 +6,83 @@ on:
       - 'v*'
 
 jobs:
-  release:
+  build:
+    name: Build (${{ matrix.arch }})
+    runs-on: macos-latest
     permissions:
       contents: write
+
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest'
-            args: '--target x86_64-apple-darwin'
-
-    runs-on: ${{ matrix.platform }}
+          - arch: arm64
+            swift_target: aarch64-apple-macosx
+          - arch: x86_64
+            swift_target: x86_64-apple-macosx
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
 
-      - name: Add Rust targets (macOS)
+      - name: Resolve Swift package dependencies
+        run: swift package resolve
+
+      - name: Build release binary
+        run: swift build -c release --arch ${{ matrix.arch }}
+
+      - name: Bundle .app
         run: |
-          rustup target add aarch64-apple-darwin
-          rustup target add x86_64-apple-darwin
+          APP="SmartClip.app"
+          rm -rf "$APP"
+          mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+          # Copy binary
+          cp .build/${{ matrix.swift_target }}/release/SmartClip "$APP/Contents/MacOS/SmartClip"
+
+          # Copy Info.plist
+          cp SmartClip/Info.plist "$APP/Contents/Info.plist"
+
+          # Copy Sparkle framework (SPM artifact)
+          SPARKLE_FW=$(find .build/artifacts -name "Sparkle.framework" -maxdepth 8 | grep "${{ matrix.swift_target }}" | head -1)
+          if [ -n "$SPARKLE_FW" ]; then
+            cp -R "$SPARKLE_FW" "$APP/Contents/Frameworks/"
+            install_name_tool -add_rpath @executable_path/../Frameworks "$APP/Contents/MacOS/SmartClip"
+          fi
+
+          # Copy resource bundles if present
+          BUNDLE=$(find .build/${{ matrix.swift_target }}/release -name "*.bundle" | head -1)
+          if [ -n "$BUNDLE" ]; then
+            cp -R "$BUNDLE" "$APP/Contents/Resources/"
+          fi
+
+          # Set version from tag
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" "$APP/Contents/Info.plist"
+
+      - name: Create DMG
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          DMG_NAME="SmartClip_${VERSION}_${{ matrix.arch }}.dmg"
+          hdiutil create -volname "SmartClip" -srcfolder SmartClip.app \
+            -ov -format UDZO "$DMG_NAME"
+          echo "DMG_NAME=$DMG_NAME" >> "$GITHUB_ENV"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release and upload DMG
+        uses: softprops/action-gh-release@v2
         with:
-          node-version: 'lts/*'
-
-      - name: Install frontend dependencies
-        working-directory: clipvault
-        run: npm install
-
-      - name: Build and release Tauri app
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
-        with:
-          projectPath: 'clipvault'
-          tagName: ${{ github.ref_name }}
-          releaseName: 'SmartClip ${{ github.ref_name }}'
-          releaseBody: 'See the assets below to download and install this version.'
-          releaseDraft: true
+          name: SmartClip ${{ github.ref_name }}
+          body: See the assets below to download and install this version.
+          draft: true
           prerelease: false
-          args: ${{ matrix.args }}
-          includeUpdaterJson: true
+          files: ${{ env.DMG_NAME }}
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -65,38 +92,26 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Upload DMGs to GCS
+      - name: Upload DMG to GCS
         run: |
-          DMG=$(find clipvault/src-tauri/target -name '*.dmg' | head -1)
-          if [ -n "$DMG" ]; then
-            ARCH=$(echo "$DMG" | grep -o 'aarch64\|x64' | head -1)
-            # Upload versioned DMG
-            gcloud storage cp "$DMG" gs://capaccino/
-            # Upload with fixed "latest" name
-            cp "$DMG" "SmartClip_latest_${ARCH}.dmg"
-            gcloud storage cp "SmartClip_latest_${ARCH}.dmg" gs://capaccino/
-          fi
+          # Upload versioned DMG
+          gcloud storage cp "${{ env.DMG_NAME }}" gs://capaccino/
 
-      - name: Upload latest.json to GCS
-        run: |
-          if [ -f clipvault/src-tauri/target/release/bundle/macos/latest.json ]; then
-            gcloud storage cp clipvault/src-tauri/target/release/bundle/macos/latest.json gs://capaccino/latest.json
-          fi
+          # Upload with fixed "latest" name
+          cp "${{ env.DMG_NAME }}" "SmartClip_latest_${{ matrix.arch }}.dmg"
+          gcloud storage cp "SmartClip_latest_${{ matrix.arch }}.dmg" gs://capaccino/
 
       - name: Update Homebrew cask
-        if: contains(matrix.args, 'aarch64')
+        if: matrix.arch == 'arm64'
         env:
           GH_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
         run: |
-          DMG=$(find clipvault/src-tauri/target -name '*.dmg' | head -1)
-          if [ -z "$DMG" ]; then exit 0; fi
-          VERSION=$(grep '"version"' clipvault/src-tauri/tauri.conf.json | head -1 | sed 's/.*"\([0-9]*\.[0-9]*\.[0-9]*\)".*/\1/')
-          SHA=$(shasum -a 256 "$DMG" | awk '{print $1}')
+          SHA=$(shasum -a 256 "${{ env.DMG_NAME }}" | awk '{print $1}')
           git config --global --unset-all http.https://github.com/.extraheader || true
           git clone https://x-access-token:${GH_TOKEN}@github.com/sompodsign/homebrew-tap.git /tmp/tap
           cd /tmp/tap
-          sed -i '' "s/version \".*\"/version \"${VERSION}\"/" Casks/smartclip.rb
+          sed -i '' "s/version \".*\"/version \"${{ env.VERSION }}\"/" Casks/smartclip.rb
           sed -i '' "s/sha256 \".*\"/sha256 \"${SHA}\"/" Casks/smartclip.rb
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A && git commit -m "bump smartclip to ${VERSION}" && git push
+          git add -A && git commit -m "bump smartclip to ${{ env.VERSION }}" && git push
