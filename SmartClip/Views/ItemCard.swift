@@ -4,6 +4,7 @@ struct ItemCard: View {
     @EnvironmentObject var viewModel: ClipboardViewModel
     let item: ClipboardItem
     @State private var isHovering = false
+    @State private var thumbImage: NSImage?
 
     private var isCopied: Bool { viewModel.copiedItemId == item.id }
 
@@ -36,7 +37,7 @@ struct ItemCard: View {
             }
 
             if item.contentType == "image" {
-                if let thumbPath = item.thumbPath, let image = NSImage(contentsOfFile: thumbPath) {
+                if let image = thumbImage {
                     Image(nsImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
@@ -44,6 +45,10 @@ struct ItemCard: View {
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                         .overlay(RoundedRectangle(cornerRadius: 4).stroke(.white.opacity(0.08), lineWidth: 1))
                         .opacity(0.85)
+                } else {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(.quaternary.opacity(0.3))
+                        .frame(width: 48, height: 48)
                 }
             } else {
                 Text(item.preview)
@@ -61,5 +66,15 @@ struct ItemCard: View {
         .contentShape(Rectangle())
         .onTapGesture { viewModel.copyToClipboard(item: item) }
         .onHover { hovering in withAnimation(.easeInOut(duration: 0.12)) { isHovering = hovering } }
+        .task(id: item.thumbPath) {
+            guard let path = item.thumbPath else { return }
+            // Try cache first (sync, no disk I/O if cached)
+            if let cached = ImageCache.shared.image(for: path) {
+                thumbImage = cached
+                return
+            }
+            // Load asynchronously off main thread
+            thumbImage = await ImageCache.shared.loadImageAsync(for: path)
+        }
     }
 }

@@ -39,8 +39,13 @@ final class ClipboardMonitor {
         guard pb.changeCount != lastChangeCount else { return }
         lastChangeCount = pb.changeCount
 
-        // Grab data on main thread (NSPasteboard requires it), then process off-main
-        if let imageData = pb.data(forType: .tiff) ?? pb.data(forType: .png) {
+        // Check available types first (cheap) before reading data
+        let types = pb.types ?? []
+        let hasImage = types.contains(.tiff) || types.contains(.png)
+
+        if hasImage {
+            // Read image data on main (NSPasteboard requires it), then process off-main
+            guard let imageData = pb.data(forType: .tiff) ?? pb.data(forType: .png) else { return }
             processingQueue.async { [weak self] in
                 guard let self else { return }
                 let hash = self.sha256(imageData)

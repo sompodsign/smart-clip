@@ -3,7 +3,7 @@ import GRDB
 
 /// Represents a single clipboard history item stored in the database.
 /// Schema matches the existing Tauri/Rust `clipboard_items` table for backward compatibility.
-struct ClipboardItem: Codable, Identifiable, FetchableRecord, PersistableRecord {
+struct ClipboardItem: Codable, Identifiable, Equatable, FetchableRecord, PersistableRecord {
     static let databaseTableName = "clipboard_items"
 
     var id: Int64?
@@ -40,11 +40,17 @@ struct ClipboardItem: Codable, Identifiable, FetchableRecord, PersistableRecord 
         return textValue?.prefix(200).description ?? ""
     }
 
-    var timeAgo: String {
-        let date = Date(timeIntervalSince1970: TimeInterval(createdAt))
+    // Cached formatter — creating RelativeDateTimeFormatter is expensive;
+    // reuse a single instance instead of allocating one per item per render.
+    private static let relativeDateFormatter: RelativeDateTimeFormatter = {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
+        return formatter
+    }()
+
+    var timeAgo: String {
+        let date = Date(timeIntervalSince1970: TimeInterval(createdAt))
+        return Self.relativeDateFormatter.localizedString(for: date, relativeTo: Date())
     }
 }
 
