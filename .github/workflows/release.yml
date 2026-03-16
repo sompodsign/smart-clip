@@ -97,9 +97,18 @@ jobs:
           # Upload versioned DMG
           gcloud storage cp "${{ env.DMG_NAME }}" gs://capaccino/
 
-          # Upload with fixed "latest" name
+          # Upload with fixed "latest" name (no-cache so CDN/browsers always fetch fresh)
           cp "${{ env.DMG_NAME }}" "SmartClip_latest_${{ matrix.arch }}.dmg"
-          gcloud storage cp "SmartClip_latest_${{ matrix.arch }}.dmg" gs://capaccino/
+          gcloud storage cp \
+            --cache-control="no-cache, max-age=0" \
+            "SmartClip_latest_${{ matrix.arch }}.dmg" gs://capaccino/
+
+      - name: Verify GCS upload
+        run: |
+          echo "=== Verifying versioned DMG ==="
+          gcloud storage ls -l "gs://capaccino/${{ env.DMG_NAME }}"
+          echo "=== Verifying latest DMG ==="
+          gcloud storage ls -l "gs://capaccino/SmartClip_latest_${{ matrix.arch }}.dmg"
 
       - name: Update Homebrew cask
         if: matrix.arch == 'arm64'
