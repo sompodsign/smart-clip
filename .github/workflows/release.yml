@@ -18,7 +18,7 @@ jobs:
         include:
           - arch: arm64
             gcs_arch: aarch64
-            swift_target: aarch64-apple-macosx
+            swift_target: arm64-apple-macosx
           - arch: x86_64
             gcs_arch: x64
             swift_target: x86_64-apple-macosx
@@ -48,8 +48,8 @@ jobs:
           # Copy Info.plist
           cp SmartClip/Info.plist "$APP/Contents/Info.plist"
 
-          # Copy Sparkle framework (SPM artifact)
-          SPARKLE_FW=$(find .build/artifacts -name "Sparkle.framework" -maxdepth 8 | grep "${{ matrix.swift_target }}" | head -1)
+          # Copy Sparkle framework (SPM artifact — universal binary)
+          SPARKLE_FW=$(find .build/artifacts -name "Sparkle.framework" -maxdepth 8 | head -1)
           if [ -n "$SPARKLE_FW" ]; then
             cp -R "$SPARKLE_FW" "$APP/Contents/Frameworks/"
             install_name_tool -add_rpath @executable_path/../Frameworks "$APP/Contents/MacOS/SmartClip"
