@@ -30,7 +30,10 @@ struct ContentView: View {
             LicenseGate()
         }
         .frame(width: 340)
-        .background(.ultraThinMaterial)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(nsColor: .windowBackgroundColor).opacity(0.96))
+        )
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
