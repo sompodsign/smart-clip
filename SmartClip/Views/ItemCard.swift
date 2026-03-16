@@ -13,27 +13,24 @@ struct ItemCard: View {
             HStack(spacing: 5) {
                 Spacer()
 
-                if isHovering && !isCopied {
-                    HStack(spacing: 2) {
-                        Button { viewModel.togglePin(id: item.id!) } label: {
-                            Image(systemName: item.pinned ? "pin.fill" : "pin")
-                                .font(.system(size: 11))
-                                .foregroundStyle(item.pinned ? .secondary : .tertiary)
-                        }.buttonStyle(.plain)
-                        Button { viewModel.deleteItem(id: item.id!) } label: {
-                            Image(systemName: "trash").font(.system(size: 11)).foregroundStyle(.tertiary)
-                        }.buttonStyle(.plain)
-                    }.transition(.opacity)
+                HStack(spacing: 2) {
+                    Button { viewModel.togglePin(id: item.id!) } label: {
+                        Image(systemName: item.pinned ? "pin.fill" : "pin")
+                            .font(.system(size: 11))
+                            .foregroundStyle(item.pinned ? .secondary : .tertiary)
+                    }.buttonStyle(.plain)
+                    Button { viewModel.deleteItem(id: item.id!) } label: {
+                        Image(systemName: "trash").font(.system(size: 11)).foregroundStyle(.tertiary)
+                    }.buttonStyle(.plain)
                 }
+                .opacity(isHovering && !isCopied ? 1 : 0)
 
-                if isCopied {
-                    Text("Copied")
-                        .font(.system(size: 10, weight: .medium))
-                        .padding(.horizontal, 6).padding(.vertical, 1)
-                        .background(.white.opacity(0.15))
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                        .transition(.opacity)
-                }
+                Text("Copied")
+                    .font(.system(size: 10, weight: .medium))
+                    .padding(.horizontal, 6).padding(.vertical, 1)
+                    .background(.white.opacity(0.15))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .opacity(isCopied ? 1 : 0)
             }
 
             if item.contentType == "image" {
@@ -57,7 +54,10 @@ struct ItemCard: View {
             }
         }
         .padding(.horizontal, 10).padding(.vertical, 8)
-        .background(RoundedRectangle(cornerRadius: 6).fill(isCopied ? .white.opacity(0.08) : (isHovering ? .white.opacity(0.06) : .clear)))
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(isCopied ? .white.opacity(0.08) : (isHovering ? .white.opacity(0.06) : .clear))
+        )
         .overlay(alignment: .leading) {
             if item.pinned {
                 Rectangle().fill(.white.opacity(0.3)).frame(width: 2).clipShape(RoundedRectangle(cornerRadius: 1))
@@ -65,15 +65,13 @@ struct ItemCard: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { viewModel.copyToClipboard(item: item) }
-        .onHover { hovering in withAnimation(.easeInOut(duration: 0.12)) { isHovering = hovering } }
+        .onHover { isHovering = $0 }
         .task(id: item.thumbPath) {
             guard let path = item.thumbPath else { return }
-            // Try cache first (sync, no disk I/O if cached)
             if let cached = ImageCache.shared.image(for: path) {
                 thumbImage = cached
                 return
             }
-            // Load asynchronously off main thread
             thumbImage = await ImageCache.shared.loadImageAsync(for: path)
         }
     }
