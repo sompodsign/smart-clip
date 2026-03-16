@@ -64,7 +64,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Panel Setup
 
     private func setupPanel() {
-        let panelWidth: CGFloat = 340
+        let panelWidth: CGFloat = 360
 
         panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: panelWidth, height: 400),
@@ -86,6 +86,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             rootView: ContentView()
                 .environmentObject(clipboardViewModel)
         )
+        hostingView.wantsLayer = true
+        hostingView.layer?.backgroundColor = .clear
 
         panel.contentView = hostingView
     }
@@ -108,16 +110,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menuBarHeight: CGFloat = NSApp.mainMenu?.menuBarHeight ?? 24
         let maxHeight = screen.visibleFrame.height
         let itemCount = max(clipboardViewModel.itemCount, 1)
-        let contentHeight: CGFloat = 50 + 50 + CGFloat(itemCount) * 56 + 60 + 16 // header + search + items + footer + padding
+        let contentHeight: CGFloat = 50 + 50 + CGFloat(itemCount) * 56 + 60 + 36 // header + search + items + footer + padding
         let panelHeight = min(contentHeight, maxHeight)
 
         // Position panel below the status item
         guard let button = statusItem.button, let buttonWindow = button.window else { return }
         let buttonFrame = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
-        let panelX = buttonFrame.midX - 340 / 2
+        let panelX = buttonFrame.midX - 360 / 2
         let panelY = buttonFrame.minY - panelHeight
 
-        panel.setFrame(NSRect(x: panelX, y: panelY, width: 340, height: panelHeight), display: true)
+        panel.setFrame(NSRect(x: panelX, y: panelY, width: 360, height: panelHeight), display: true)
         panel.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
 

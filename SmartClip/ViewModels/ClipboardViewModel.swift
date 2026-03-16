@@ -29,11 +29,15 @@ final class ClipboardViewModel: ObservableObject {
     }
 
     func refreshHistory() {
-        do {
-            let filter = activeFilter == "all" ? nil : activeFilter
-            let search = searchQuery.isEmpty ? nil : searchQuery
-            items = try databaseService.getHistory(search: search, contentType: filter)
-        } catch { logger.error("Failed to fetch history: \(error)") }
+        let filter = activeFilter == "all" ? nil : activeFilter
+        let search = searchQuery.isEmpty ? nil : searchQuery
+        let db = databaseService
+        Task.detached(priority: .userInitiated) {
+            do {
+                let fetched = try db.getHistory(search: search, contentType: filter)
+                await MainActor.run { [weak self] in self?.items = fetched }
+            } catch { }
+        }
     }
 
     func copyToClipboard(item: ClipboardItem) {
