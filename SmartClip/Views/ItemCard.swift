@@ -10,9 +10,6 @@ struct ItemCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 5) {
-                Image(systemName: item.contentType == "image" ? "photo" : "doc.text")
-                    .font(.system(size: 11)).foregroundStyle(.tertiary)
-                Text(item.timeAgo).font(.system(size: 10)).foregroundStyle(.tertiary)
                 Spacer()
 
                 if isHovering && !isCopied {

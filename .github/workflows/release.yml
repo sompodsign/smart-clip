@@ -17,8 +17,10 @@ jobs:
       matrix:
         include:
           - arch: arm64
+            gcs_arch: aarch64
             swift_target: aarch64-apple-macosx
           - arch: x86_64
+            gcs_arch: x64
             swift_target: x86_64-apple-macosx
 
     steps:
@@ -69,7 +71,7 @@ jobs:
         run: |
           VERSION="${{ github.ref_name }}"
           VERSION="${VERSION#v}"
-          DMG_NAME="SmartClip_${VERSION}_${{ matrix.arch }}.dmg"
+          DMG_NAME="SmartClip_${VERSION}_${{ matrix.gcs_arch }}.dmg"
           hdiutil create -volname "SmartClip" -srcfolder SmartClip.app \
             -ov -format UDZO "$DMG_NAME"
           echo "DMG_NAME=$DMG_NAME" >> "$GITHUB_ENV"
@@ -98,17 +100,17 @@ jobs:
           gcloud storage cp "${{ env.DMG_NAME }}" gs://capaccino/
 
           # Upload with fixed "latest" name (no-cache so CDN/browsers always fetch fresh)
-          cp "${{ env.DMG_NAME }}" "SmartClip_latest_${{ matrix.arch }}.dmg"
+          cp "${{ env.DMG_NAME }}" "SmartClip_latest_${{ matrix.gcs_arch }}.dmg"
           gcloud storage cp \
             --cache-control="no-cache, max-age=0" \
-            "SmartClip_latest_${{ matrix.arch }}.dmg" gs://capaccino/
+            "SmartClip_latest_${{ matrix.gcs_arch }}.dmg" gs://capaccino/
 
       - name: Verify GCS upload
         run: |
           echo "=== Verifying versioned DMG ==="
           gcloud storage ls -l "gs://capaccino/${{ env.DMG_NAME }}"
           echo "=== Verifying latest DMG ==="
-          gcloud storage ls -l "gs://capaccino/SmartClip_latest_${{ matrix.arch }}.dmg"
+          gcloud storage ls -l "gs://capaccino/SmartClip_latest_${{ matrix.gcs_arch }}.dmg"
 
       - name: Update Homebrew cask
         if: matrix.arch == 'arm64'
