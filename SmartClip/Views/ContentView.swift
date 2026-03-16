@@ -36,6 +36,6 @@ struct ContentView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(.white.opacity(0.1), lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.3), radius: 20, y: 5)
+        .padding(10)
     }
 }

@@ -12,6 +12,7 @@ final class ClipboardMonitor {
     private let databaseService: DatabaseService
     private let licenseService: LicenseService
     private let logger = Logger(subsystem: Constants.bundleIdentifier, category: "Clipboard")
+    private let processingQueue = DispatchQueue(label: "com.smartclip.clipboard.processing", qos: .userInitiated)
 
     var onClipboardChange: (() -> Void)?
 
@@ -38,18 +39,25 @@ final class ClipboardMonitor {
         guard pb.changeCount != lastChangeCount else { return }
         lastChangeCount = pb.changeCount
 
+        // Grab data on main thread (NSPasteboard requires it), then process off-main
         if let imageData = pb.data(forType: .tiff) ?? pb.data(forType: .png) {
-            let hash = sha256(imageData)
-            if hash != lastImageHash {
-                lastImageHash = hash
-                handleImage(imageData, hash: hash)
+            processingQueue.async { [weak self] in
+                guard let self else { return }
+                let hash = self.sha256(imageData)
+                if hash != self.lastImageHash {
+                    self.lastImageHash = hash
+                    self.handleImage(imageData, hash: hash)
+                }
             }
         } else if let text = pb.string(forType: .string), !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            let hash = sha256(Data(text.utf8))
-            if hash != lastTextHash {
-                lastTextHash = hash
-                let html = pb.string(forType: .html)
-                handleText(text, html: html, hash: hash)
+            let html = pb.string(forType: .html)
+            processingQueue.async { [weak self] in
+                guard let self else { return }
+                let hash = self.sha256(Data(text.utf8))
+                if hash != self.lastTextHash {
+                    self.lastTextHash = hash
+                    self.handleText(text, html: html, hash: hash)
+                }
             }
         }
     }
