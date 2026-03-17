@@ -32,9 +32,10 @@ final class ClipboardViewModel: ObservableObject {
         let filter = activeFilter == "all" ? nil : activeFilter
         let search = searchQuery.isEmpty ? nil : searchQuery
         let db = databaseService
+        let limit = maxItems
         Task.detached(priority: .userInitiated) {
             do {
-                let fetched = try db.getHistory(search: search, contentType: filter)
+                let fetched = try db.getHistory(search: search, contentType: filter, limit: limit)
                 await MainActor.run { [weak self] in self?.items = fetched }
             } catch { }
         }
