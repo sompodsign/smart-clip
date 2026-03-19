@@ -66,7 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupPanel() {
         let panelWidth: CGFloat = 360
 
-        panel = NSPanel(
+        panel = KeyablePanel(
             contentRect: NSRect(x: 0, y: 0, width: panelWidth, height: 400),
             styleMask: [.nonactivatingPanel, .fullSizeContentView, .borderless],
             backing: .buffered,
