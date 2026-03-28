@@ -24,3 +24,6 @@ DerivedData/
 # IDE
 .vscode/
 .idea/
+
+# Environment
+.env
